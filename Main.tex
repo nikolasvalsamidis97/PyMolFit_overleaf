@@ -40,9 +40,9 @@
 % if you use custom commands in your title,
 % ensure to check your title when submitting!
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   \title{PyMolFit: A Python package for multidimensional molecular spectral fitting}
+   \title{PyMolFit: A Python framework for molecular spectral fitting}
 
-   \subtitle{An upgrade, based on the original Molecfit}
+   \subtitle{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Please separate each author with the \and command
@@ -89,55 +89,208 @@
    \maketitle
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1 Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Introduction}
-% Motivation
 
-% Why Pymolfit
+% Explain the scientific problem.
+% Why is molecular spectral fitting important?
+% What kinds of observations require it?
+%
+% Briefly introduce existing software (especially Molecfit).
+%
+% Explain why PyMolFit was developed.
+%
+% Finish with a short paragraph describing the purpose and scope of this paper.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 2 Background
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Background}
-% Molecfit
 
-% Existing software
+\subsection{Molecular spectral fitting}
 
-% Design goals of PyMolFit
+% Explain the physical problem.
+% Give the necessary background for readers unfamiliar with the topic.
+% Keep this concise.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Software Overview}
+\subsection{Existing software}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Methods}
-% Fitting methodology
+% Introduce Molecfit and any other relevant software.
+%
+% Explain what these packages do well.
+% Explain their limitations that motivated PyMolFit.
 
-% Models
+\subsection{Motivation for PyMolFit}
 
-% Algorithms
+% Explain the design goals.
+%
+% Why create a new package?
+% What problems does it solve?
+% Who is the intended user?
 
-% Data flow
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 3 PyMolFit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{PyMolFit}
+
+\subsection{Software philosophy}
+
+% Explain the philosophy behind the software.
+%
+% Modularity
+% Extensibility
+% Reproducibility
+% Python ecosystem
+% Object-oriented design
+
+\subsection{Relationship to Molecfit}
+
+% Be completely transparent.
+%
+% Explain what originates from Molecfit.
+% Explain what has been modified.
+% Explain what is entirely new.
+%
+% State clearly that PyMolFit builds upon Molecfit while extending
+% its capabilities.
+
+\subsection{External resources}
+
+% Describe external models and databases.
+%
+% Atmospheric models
+% Weather models
+% Molecular line databases
+%
+% Explain that these are existing scientific resources
+% integrated into PyMolFit.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4 Methodology
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Methodology}
+
+\subsection{Overall workflow}
+
+% Describe the fitting process from beginning to end.
+
+\subsection{Forward model}
+
+% Explain how synthetic spectra are generated.
+
+\subsection{Atmospheric modelling}
+
+% Explain atmospheric profiles.
+% Weather profiles.
+% Molecular abundances.
+%
+% Include equations where appropriate.
+
+\subsection{Spectral line modelling}
+
+% Explain line databases.
+% Line shapes.
+% Instrumental broadening.
+% Wavelength grids.
+%
+% Include equations if needed.
+
+\subsection{Optimization}
+
+% Explain the fitting algorithm.
+%
+% Objective function.
+% Minimization.
+% Convergence.
+% Parameter constraints.
+
+\subsection{Outputs}
+
+% Explain what the software returns.
+%
+% Best-fit parameters.
+% Residuals.
+% Diagnostics.
+% Output products.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 5 Validation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Validation}
-% Example fits
 
-% Comparison with Molecfit
+\subsection{Synthetic data}
 
-% Tests
-\cite{valsamidis2026radiation}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Usage}
-% Typical workflow
-% Example
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Availability}
-% Repository
+% Demonstrate recovery of known parameters.
 
-% Licence
+\subsection{Comparison with Molecfit}
 
-% Documentation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compare results.
+%
+% Demonstrate agreement where expected.
+
+\subsection{Example application}
+
+% Demonstrate PyMolFit on real observational data.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 6 Discussion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Discussion}
+
+% Discuss strengths.
+%
+% Current limitations.
+%
+% Computational performance (if relevant).
+%
+% Planned future developments
+% (e.g. theoretical stellar spectra).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 7 Availability
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Code availability}
+
+% Repository.
+%
+% License.
+%
+% Installation.
+%
+% Documentation.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 8 Conclusions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Conclusions}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Summarize:
+%
+% Motivation
+% Main capabilities
+% Validation
+% Availability
+%
+% End with the future outlook.
+
+
 \begin{acknowledgements}
 
 \end{acknowledgements}
