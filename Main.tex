@@ -20,7 +20,6 @@
 
 \usepackage{graphicx}
 \usepackage{txfonts}
-\usepackage{lipsum}
 \usepackage{subcaption}         % necessary for continued figures, example in section 3
                                 % and appendix
 \usepackage{lscape}             % to rotate a single page table, example in appendix.
@@ -28,11 +27,25 @@
 \usepackage{placeins}           % useful with \FloatBarrier, to keep 
                                 % onecolumn floats from drifting to the next section
                                 
+
+\usepackage[hidelinks]{hyperref}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%\usepackage[options]{hyperref}
-% To add links in your PDF file, use the package "hyperref"
-% with options according to your LaTeX or PDFLaTeX drivers.
+% LINKS
+
+\newcommand{\Molecfit}{\href{https://www.eso.org/sci/software/pipelines/skytools/molecfit}{Molecfit}}
+
+\newcommand{\LBLRTM}{\href{https://github.com/AER-RC/LBLRTM}{LBLRTM}}
+
+\newcommand{\GDAS}{\href{https://psl.noaa.gov}{GDAS}}
+
+\newcommand{\HITRAN}{\href{https://hitran.org}{HITRAN}}
+
+\newcommand{\MIPAS}{\href{https://earth.esa.int/eogateway/instruments/mipas}{MIPAS}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \begin{document}
 
@@ -40,7 +53,7 @@
 % if you use custom commands in your title,
 % ensure to check your title when submitting!
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   \title{PyMolFit: A Python framework for molecular spectral fitting}
+   \title{PyMolFit: A pure-Python framework for model-based telluric correction}
 
    \subtitle{}
 
@@ -138,7 +151,20 @@
 % 3 PyMolFit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{PyMolFit}
+\section{PyMolFit framework}
+Ground-based astronomical spectra are affected by absorption in the Earth’s atmosphere. These telluric absorption features contaminate the observed spectrum and can interfere with the detection and analysis of astrophysical spectral lines, particularly when stellar and atmospheric features overlap in wavelength. Accurate modeling and correction of telluric absorption is therefore an essential step in the reduction and interpretation of many spectroscopic observations.
+
+PyMolFit is an independent pure-Python package for model-based telluric correction of astronomical spectra. The software combines physically based atmospheric modeling with radiative-transfer calculations and spectroscopic molecular databases to estimate the atmospheric transmission and recover the intrinsic astronomical spectrum.
+
+While several software packages for telluric correction are already available, PyMolFit was developed to provide an independent and extensible framework that integrates naturally into modern astronomical data-analysis workflows. As Python has become the predominant programming language in astronomical research, with widely adopted libraries such as NumPy, SciPy, and Astropy forming the foundation of many reduction pipelines and analysis tools, implementing the complete telluric-correction workflow within the Python ecosystem enables seamless integration into existing scientific software. The modular design of PyMolFit further facilitates validation, maintenance, and future development, allowing individual physical models and numerical components to be extended or replaced while preserving the overall framework.
+
+\subsection{Relationship to Molecfit}
+PyMolFit builds upon the physical methodology established by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2}, adopting the same general approach to model-based telluric correction based on atmospheric modeling and line-by-line radiative-transfer calculations. Rather than interfacing with or executing Molecfit itself, PyMolFit provides an independent implementation of these methods written entirely in Python. The software therefore reproduces the overall modeling philosophy while allowing tighter integration with modern Python-based astronomical analysis workflows.
+
+While Molecfit primarily operates through ESO Reflex workflows and command-line recipes, PyMolFit exposes its functionality through a unified Python API that accepts spectrum files, in-memory spectra, or wavelength–flux arrays directly. The software further extends the workflow with automatic segmentation of large spectra, automation of fit-regions, and optional integration of theoretical spectra during telluric modeling. 
+
+PyMolFit does not re-implement atmospheric spectroscopy from first principles. It builds upon established atmospheric radiative-transfer methodology together with publicly available molecular databases and atmospheric models, while providing an independent software implementation and extending the user workflow with additional capabilities.
+
 
 \subsection{Software philosophy}
 
