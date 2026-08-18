@@ -157,61 +157,31 @@ PyMolFit provides a single entry point, \texttt{correct()}, for correcting spect
 \section{Methodology}
 
 \subsection{Overall workflow}
-\pymolfit first converts the input spectrum and its observational metadata into a standardized internal representation. Wavelength, flux, uncertainty, quality flags and spectral-order information are read from the input product, while the observation time, location, airmass and instrumental properties are obtained from the FITS metadata or supplied explicitly. The wavelength coordinates are converted to vacuum wavelengths in the observatory reference frame, and detector gaps and separate spectral orders are retained. This standardized representation provides the input for constructing the atmospheric profile.
 
+\subsection{Input spectrum and metadata}
+\pymolfit PyMolFit first converts the input spectrum and its observational metadata into a standardised internal representation while preserving uncertainties, quality flags, and detector or spectral-order structure. It then constructs an atmospheric profile, calculates a high-resolution transmission spectrum, transforms this model to the observational domain, and fits it to the selected pixels. The fitted transmission is finally evaluated across the complete spectrum and used to produce the telluric-corrected output.
+
+\subsection{Atmospheric modelling}
 The observational metadata are subsequently used to construct a layered atmospheric profile above the observatory. PyMolFit combines a \MIPAS \citep{MIPAS} reference atmosphere with \GDAS \citep{GDAS} pressure, temperature and water-vapour data. When available, time-local \GDAS profiles are interpolated to the observation time; otherwise, an appropriate average profile is used. Surface meteorological measurements from the spectrum metadata are incorporated into the lowest atmospheric layers. The resulting profile provides the pressure, temperature, molecular composition and line-of-sight column density of each layer required by the radiative-transfer calculation.
 
+\subsection{Molecular absorption and atmospheric continua}
 Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the AER \citep{AER} molecular catalogue, and their temperature-dependent strengths, pressure shifts, Doppler widths and collision-broadened widths are evaluated independently in every atmospheric layer. The resulting Voigt profiles are multiplied by the corresponding molecular columns and summed over all lines and layers. This produces a species-resolved optical-depth model, from which the intrinsic high-resolution atmospheric transmission is obtained through the Beer–Lambert relation \(T(\lambda)=\exp[-\tau(\lambda)]\) \citep{RYBICKI1979}.
 
-The intrinsic transmission spectrum is subsequently transformed to the observational domain. A wavelength-correction model accounts for residual errors in the spectral wavelength solution, while convolution with a parametrized line-spread function represents the finite instrumental resolution. The broadened transmission is then integrated onto the detector wavelength grid. Finally, a smooth polynomial continuum converts the dimensionless transmission spectrum into a model of the observed flux. This produces a forward model with the same wavelength sampling as the input spectrum, whose molecular, wavelength, instrumental and continuum parameters are optimized in the following fitting stage.
+\subsection{Instrumental, wavelength, and continuum modelling}
+Residual errors in the wavelength solution are represented by a wavelength-correction model. The transmission spectrum is then convolved with a parametrised line-spread function to account for the finite instrumental resolution and integrated onto the detector wavelength grid. A smooth polynomial continuum scales the resulting transmission model to the observed flux level.
 
+\subsection{Forward model}
+The forward model converts the high-resolution atmospheric transmission into a prediction of the observed flux. It combines the atmospheric transmission with a smooth representation of the source continuum and applies the wavelength and instrumental response. The resulting model has the same wavelength sampling as the input spectrum and can therefore be compared directly with the observed flux during fitting.
+
+
+\subsection{Optimization}
 The atmospheric and instrumental parameters are determined through bounded non-linear least-squares optimization. At each iteration, the species-resolved optical depths are scaled and combined, converted into transmission, wavelength corrected, convolved with the instrumental line-spread function, and re-binned onto the observed detector grid. A polynomial continuum converts the transmission into a model flux, which is compared with the observation over the selected fitting pixels. Molecular columns, wavelength coefficients and instrumental widths are iteratively updated until the residuals or parameter changes satisfy the convergence criteria.
 
+
+\subsection{Outputs}
 Following convergence, the fitting masks are removed and the optimized atmospheric, wavelength and instrumental parameters are applied over the complete spectral range. The high-resolution transmission is recomputed, convolved with the fitted line-spread function and re-binned onto every valid detector pixel. Fit and exclusion regions therefore affect parameter estimation only; atmospheric transmission is still evaluated within excluded regions and outside the intervals used for fitting. This produces the final detector-sampled transmission spectrum used for telluric correction.
 
 The telluric-corrected spectrum is obtained by dividing the observed flux by the optimized detector-sampled atmospheric transmission. The original wavelength sampling, spectral-order structure and detector gaps are retained, while observational and model uncertainties are propagated through the division. Pixels with transmission below a specified threshold are masked because the atmospheric absorption has removed too much information for a stable correction. The final product includes the corrected flux together with the fitted transmission, model parameters, masks and provenance information.
-
-
-\subsection{Forward model}
-
-% Explain how synthetic spectra are generated.
-
-\subsection{Atmospheric modelling}
-
-% Explain atmospheric profiles.
-% Weather profiles.
-% Molecular abundances.
-%
-% Include equations where appropriate
-
-\subsection{Instrumental, wavelength, and continuum modelling}
-
-\subsection{Molecular absorption and atmospheric continua}
-
-% Explain line databases.
-% Line shapes.
-% Instrumental broadening.
-% Wavelength grids.
-%
-% Include equations if needed.
-
-\subsection{Optimization}
-
-% Explain the fitting algorithm.
-%
-% Objective function.
-% Minimization.
-% Convergence.
-% Parameter constraints.
-
-\subsection{Outputs}
-
-% Explain what the software returns.
-%
-% Best-fit parameters.
-% Residuals.
-% Diagnostics.
-% Output products.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
