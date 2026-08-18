@@ -44,6 +44,8 @@
 
 \newcommand{\MIPAS}{\href{https://earth.esa.int/eogateway/instruments/mipas}{MIPAS}}
 
+\newcommand{\pymolfit}{PyMolFit }
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -108,23 +110,12 @@
 
 \section{Introduction}
 
-% Explain the scientific problem.
-% Why is molecular spectral fitting important?
-% What kinds of observations require it?
-%
-% Briefly introduce existing software (especially Molecfit).
-%
-% Explain why PyMolFit was developed.
-%
-% Finish with a short paragraph describing the purpose and scope of this paper.
+Ground-based astronomical spectra are affected by absorption in the Earth’s atmosphere. These telluric absorption features contaminate the observed spectrum and can interfere with the detection and analysis of astrophysical spectral lines, particularly when stellar and atmospheric features overlap in wavelength. Accurate modelling and correction of telluric absorption is therefore an essential step in the reduction and interpretation of many spectroscopic observations.
 
+[Why empirical telluric correction / standard stars can be problematic]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 2 Background
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[Model-based telluric correction and the role of Molecfit]
 
-\section{Background}
-Ground-based astronomical spectra are affected by absorption in the Earth’s atmosphere. These telluric absorption features contaminate the observed spectrum and can interfere with the detection and analysis of astrophysical spectral lines, particularly when stellar and atmospheric features overlap in wavelength. Accurate modeling and correction of telluric absorption is therefore an essential step in the reduction and interpretation of many spectroscopic observations.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,16 +124,28 @@ Ground-based astronomical spectra are affected by absorption in the Earth’s at
 
 \section{PyMolFit framework}
 
-PyMolFit is an independent pure-Python package for model-based telluric correction of astronomical spectra. The software combines physically based atmospheric modeling with radiative-transfer calculations and spectroscopic molecular databases to estimate the atmospheric transmission and recover the intrinsic astronomical spectrum.
+PyMolFit is an independent pure-Python package for model-based telluric correction of astronomical spectra. The software combines physically based atmospheric modelling with radiative-transfer calculations and spectroscopic molecular databases to estimate the atmospheric transmission and produce a telluric-corrected estimate of the astronomical spectrum.
 
-While several software packages for telluric correction are already available, PyMolFit was developed to provide an independent and extensible framework that integrates naturally into modern astronomical data-analysis workflows. As Python has become the predominant programming language in astronomical research, with widely adopted libraries such as NumPy, SciPy, and Astropy forming the foundation of many reduction pipelines and analysis tools, implementing the complete telluric-correction workflow within the Python ecosystem enables seamless integration into existing scientific software. The modular design of PyMolFit further facilitates validation, maintenance, and future development, allowing individual physical models and numerical components to be extended or replaced while preserving the overall framework.
+While several software packages for telluric correction are already available, PyMolFit was developed to provide an independent and extensible framework that integrates naturally into modern astronomical data-analysis workflows. Python is widely used for astronomical data reduction and analysis, with widely adopted libraries such as NumPy, SciPy, and Astropy forming the foundation of many reduction pipelines and analysis tools, implementing the complete telluric-correction workflow within the Python ecosystem enables direct integration into existing scientific software. The modular design of PyMolFit further facilitates validation, maintenance, and future development, allowing individual physical models and numerical components to be extended or replaced while preserving the overall framework.
 
 \subsection{Relationship to Molecfit}
-PyMolFit builds upon the physical methodology established by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2}, adopting the same general approach to model-based telluric correction based on atmospheric modeling and line-by-line radiative-transfer calculations. Rather than interfacing with or executing Molecfit itself, PyMolFit provides an independent implementation of these methods written entirely in Python. The software therefore reproduces the overall modeling philosophy while allowing tighter integration with modern Python-based astronomical analysis workflows.
+PyMolFit builds upon the physical methodology established by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2}, adopting the same general approach to model-based telluric correction based on atmospheric modelling and line-by-line radiative-transfer calculations. Rather than interfacing with or executing Molecfit itself, PyMolFit provides an independent implementation of these methods written entirely in Python. The software therefore reproduces the overall modelling philosophy while allowing tighter integration with modern Python-based astronomical analysis workflows.
 
-While Molecfit primarily operates through ESO Reflex workflows and command-line recipes, PyMolFit exposes its functionality through a unified Python API that accepts spectrum files, in-memory spectra, or wavelength–flux arrays directly. The software further extends the workflow with automatic segmentation of large spectra, automation of fit-regions, and optional integration of theoretical spectra during telluric modeling. PyMolFit does not re-implement atmospheric spectroscopy from first principles. It builds upon established atmospheric radiative-transfer methodology together with publicly available molecular databases and atmospheric models, while providing an independent software implementation and extending the user workflow with additional capabilities.
+PyMolFit is not intended to be a bit-for-bit reproduction of either Molecfit or LBLRTM. It uses an independent numerical implementation, and remaining differences in the radiative-transfer and optimization procedures are evaluated in Sect.~\ref{sec:validation}.
 
+PyMolFit exposes the telluric-correction workflow through a unified Python API that accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays. The public workflow includes automatic segmentation while preserving physical detector or order groups, automatic and interactive fit-region selection, and optional treatment of theoretical stellar spectra through feature masking or a joint
+stellar--telluric forward model. PyMolFit does not introduce a new atmospheric-spectroscopy formalism; instead, it implements established atmospheric and line-by-line radiative-transfer methods in Python without executing the Molecfit or LBLRTM software.
 
+\subsection{Public workflow and software design}
+
+PyMolFit provides a single entry point, \texttt{correct()}, for correcting spectrum files, loaded spectrum objects, or wavelength--flux arrays. All input routes use the same correction pipeline. PyMolFit handles tasks such as numerical segmentation, atmospheric-profile construction, fit-region processing, and model selection using metadata obtained from the input file or supplied explicitly by the user. The returned result contains the corrected spectrum, fitted atmospheric transmission, diagnostic information, and provenance. The automation is standard, although every parameter that is used for correction can be adjusted.
+
+% the unified correct() interface;
+% file, loaded-spectrum, and array inputs;
+% physical order preservation and numerical segmentation;
+% fit-region selection;
+% theoretical stellar masking;
+% outputs and provenance.
 
 
 
@@ -154,8 +157,20 @@ While Molecfit primarily operates through ESO Reflex workflows and command-line 
 \section{Methodology}
 
 \subsection{Overall workflow}
+\pymolfit first converts the input spectrum and its observational metadata into a standardized internal representation. Wavelength, flux, uncertainty, quality flags and spectral-order information are read from the input product, while the observation time, location, airmass and instrumental properties are obtained from the FITS metadata or supplied explicitly. The wavelength coordinates are converted to vacuum wavelengths in the observatory reference frame, and detector gaps and separate spectral orders are retained. This standardized representation provides the input for constructing the atmospheric profile.
 
-% Describe the fitting process from beginning to end.
+The observational metadata are subsequently used to construct a layered atmospheric profile above the observatory. PyMolFit combines a \MIPAS \citep{MIPAS} reference atmosphere with \GDAS \citep{GDAS} pressure, temperature and water-vapour data. When available, time-local \GDAS profiles are interpolated to the observation time; otherwise, an appropriate average profile is used. Surface meteorological measurements from the spectrum metadata are incorporated into the lowest atmospheric layers. The resulting profile provides the pressure, temperature, molecular composition and line-of-sight column density of each layer required by the radiative-transfer calculation.
+
+Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the AER \citep{AER} molecular catalogue, and their temperature-dependent strengths, pressure shifts, Doppler widths and collision-broadened widths are evaluated independently in every atmospheric layer. The resulting Voigt profiles are multiplied by the corresponding molecular columns and summed over all lines and layers. This produces a species-resolved optical-depth model, from which the intrinsic high-resolution atmospheric transmission is obtained through the Beer–Lambert relation \(T(\lambda)=\exp[-\tau(\lambda)]\) \citep{RYBICKI1979}.
+
+The intrinsic transmission spectrum is subsequently transformed to the observational domain. A wavelength-correction model accounts for residual errors in the spectral wavelength solution, while convolution with a parametrized line-spread function represents the finite instrumental resolution. The broadened transmission is then integrated onto the detector wavelength grid. Finally, a smooth polynomial continuum converts the dimensionless transmission spectrum into a model of the observed flux. This produces a forward model with the same wavelength sampling as the input spectrum, whose molecular, wavelength, instrumental and continuum parameters are optimized in the following fitting stage.
+
+The atmospheric and instrumental parameters are determined through bounded non-linear least-squares optimization. At each iteration, the species-resolved optical depths are scaled and combined, converted into transmission, wavelength corrected, convolved with the instrumental line-spread function, and re-binned onto the observed detector grid. A polynomial continuum converts the transmission into a model flux, which is compared with the observation over the selected fitting pixels. Molecular columns, wavelength coefficients and instrumental widths are iteratively updated until the residuals or parameter changes satisfy the convergence criteria.
+
+Following convergence, the fitting masks are removed and the optimized atmospheric, wavelength and instrumental parameters are applied over the complete spectral range. The high-resolution transmission is recomputed, convolved with the fitted line-spread function and re-binned onto every valid detector pixel. Fit and exclusion regions therefore affect parameter estimation only; atmospheric transmission is still evaluated within excluded regions and outside the intervals used for fitting. This produces the final detector-sampled transmission spectrum used for telluric correction.
+
+The telluric-corrected spectrum is obtained by dividing the observed flux by the optimized detector-sampled atmospheric transmission. The original wavelength sampling, spectral-order structure and detector gaps are retained, while observational and model uncertainties are propagated through the division. Pixels with transmission below a specified threshold are masked because the atmospheric absorption has removed too much information for a stable correction. The final product includes the corrected flux together with the fitted transmission, model parameters, masks and provenance information.
+
 
 \subsection{Forward model}
 
@@ -167,9 +182,11 @@ While Molecfit primarily operates through ESO Reflex workflows and command-line 
 % Weather profiles.
 % Molecular abundances.
 %
-% Include equations where appropriate.
+% Include equations where appropriate
 
-\subsection{Spectral line modelling}
+\subsection{Instrumental, wavelength, and continuum modelling}
+
+\subsection{Molecular absorption and atmospheric continua}
 
 % Explain line databases.
 % Line shapes.
@@ -201,13 +218,15 @@ While Molecfit primarily operates through ESO Reflex workflows and command-line 
 % 5 Validation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Validation}
+\section{Validation}\label{sec:validation}
+
+\subsection{Component-level physical validation}
 
 \subsection{Synthetic data}
 
 % Demonstrate recovery of known parameters.
 
-\subsection{Comparison with Molecfit}
+\subsection{Comparison with Molecfit and LBLRTM}
 
 % Compare results.
 %
@@ -223,22 +242,17 @@ While Molecfit primarily operates through ESO Reflex workflows and command-line 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Discussion}
-
-% Discuss strengths.
-%
-% Current limitations.
-%
-% Computational performance (if relevant).
-%
-% Planned future developments
-% (e.g. theoretical stellar spectra).
+% Planned future developments:
+% stronger Molecfit/LBLRTM parity,
+% broader continuum support,
+% and further validation of the joint stellar model.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 7 Availability
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Code availability}
+\section{Software and data availability}
 
 % Repository.
 %
@@ -286,91 +300,4 @@ While Molecfit primarily operates through ESO Reflex workflows and command-line 
 \bibliographystyle{aa}
 \bibliography{bibliography}
 
-
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Example below of non-structurated natbib references  
-% To use the v8.3 macros with this form of composition of bibliography,
-% the option "bibyear" should be added to the command line
-% "\documentclass[bibyear]{aa}".
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% \begin{thebibliography}{}
-
-%   \bibitem[1966]{baker} Baker, N. 1966,
-%       in Stellar Evolution,
-%       ed.\ R. F. Stein,\& A. G. W. Cameron
-%       (Plenum, New York) 333
-
-%    \bibitem[1988]{balluch} Balluch, M. 1988,
-%       A\&A, 200, 58
-
-%    \bibitem[1980]{cox} Cox, J. P. 1980,
-%       Theory of Stellar Pulsation
-%       (Princeton University Press, Princeton) 165
-
-%    \bibitem[1969]{cox69} Cox, A. N.,\& Stewart, J. N. 1969,
-%       Academia Nauk, Scientific Information 15, 1
-
-%    \bibitem[1980]{mizuno} Mizuno H. 1980,
-%       Prog. Theor. Phys., 64, 544
-   
-%    \bibitem[1987]{tscharnuter} Tscharnuter W. M. 1987,
-%       A\&A, 188, 55
-  
-%    \bibitem[1992]{terlevich} Terlevich, R. 1992, in ASP Conf. Ser. 31,
-%       Relationships between Active Galactic Nuclei and Starburst Galaxies,
-%       ed. A. V. Filippenko, 13
-
-%    \bibitem[1980a]{yorke80a} Yorke, H. W. 1980a,
-%       A\&A, 86, 286
-
-%    \bibitem[1997]{zheng} Zheng, W., Davidsen, A. F., Tytler, D. \& Kriss, G. A.
-%       1997, preprint
-% \end{thebibliography}
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Appendices must be placed after   \end{thebibliography}
-% They will be placed automatically on a new page.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{appendix}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% In the PDF output, floats should be placed
-% under their own appendix, not before the title, nor after the
-% title of the next appendix.
-
-% In short appendices, onecolumn floats (\figure*
-% or \table*) will generate a blank page.
-% To prevent this behaviour, a few examples are provided here. 
-
-% In case you have a lot of floating objects for little text and the 
-% LaTeX engine moves the floats away from their context, the command
-% \FloatBarrier of the “placeins” package will empty the
-% float buffer and place all stored floats in the continuity.
-
-% If you still encounter problems with wide floats placement,
-% just use the onecolumn environment throughout the appendices.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%____________________________________________________________
-%       Wide floats at the start of an appendix: first method
-%-------------------------------------------------------------
-% To prevent a blank page after the start of an appendix:
-% - Switch to one \onecolumn first
-% - Declare the section title
-% - Declare the onecolumn float with the parameter [ht!]
-% - Revert to \twocolumn at the end of the section
-\onecolumn
-\section{Wide tables and figures after an appendix title: recommended method}
-
-\section{Wide tables and figures after an appendix title: alternate method}
-
-\section{Long tables in appendices}
-
-\end{appendix}
 \end{document}
