@@ -124,27 +124,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Background}
-
-\subsection{Molecular spectral fitting}
-
-% Explain the physical problem.
-% Give the necessary background for readers unfamiliar with the topic.
-% Keep this concise.
-
-\subsection{Existing software}
-
-% Introduce Molecfit and any other relevant software.
-%
-% Explain what these packages do well.
-% Explain their limitations that motivated PyMolFit.
-
-\subsection{Motivation for PyMolFit}
-
-% Explain the design goals.
-%
-% Why create a new package?
-% What problems does it solve?
-% Who is the intended user?
+Ground-based astronomical spectra are affected by absorption in the Earth’s atmosphere. These telluric absorption features contaminate the observed spectrum and can interfere with the detection and analysis of astrophysical spectral lines, particularly when stellar and atmospheric features overlap in wavelength. Accurate modeling and correction of telluric absorption is therefore an essential step in the reduction and interpretation of many spectroscopic observations.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,7 +132,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{PyMolFit framework}
-Ground-based astronomical spectra are affected by absorption in the Earth’s atmosphere. These telluric absorption features contaminate the observed spectrum and can interfere with the detection and analysis of astrophysical spectral lines, particularly when stellar and atmospheric features overlap in wavelength. Accurate modeling and correction of telluric absorption is therefore an essential step in the reduction and interpretation of many spectroscopic observations.
 
 PyMolFit is an independent pure-Python package for model-based telluric correction of astronomical spectra. The software combines physically based atmospheric modeling with radiative-transfer calculations and spectroscopic molecular databases to estimate the atmospheric transmission and recover the intrinsic astronomical spectrum.
 
@@ -161,42 +140,11 @@ While several software packages for telluric correction are already available, P
 \subsection{Relationship to Molecfit}
 PyMolFit builds upon the physical methodology established by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2}, adopting the same general approach to model-based telluric correction based on atmospheric modeling and line-by-line radiative-transfer calculations. Rather than interfacing with or executing Molecfit itself, PyMolFit provides an independent implementation of these methods written entirely in Python. The software therefore reproduces the overall modeling philosophy while allowing tighter integration with modern Python-based astronomical analysis workflows.
 
-While Molecfit primarily operates through ESO Reflex workflows and command-line recipes, PyMolFit exposes its functionality through a unified Python API that accepts spectrum files, in-memory spectra, or wavelength–flux arrays directly. The software further extends the workflow with automatic segmentation of large spectra, automation of fit-regions, and optional integration of theoretical spectra during telluric modeling. 
-
-PyMolFit does not re-implement atmospheric spectroscopy from first principles. It builds upon established atmospheric radiative-transfer methodology together with publicly available molecular databases and atmospheric models, while providing an independent software implementation and extending the user workflow with additional capabilities.
+While Molecfit primarily operates through ESO Reflex workflows and command-line recipes, PyMolFit exposes its functionality through a unified Python API that accepts spectrum files, in-memory spectra, or wavelength–flux arrays directly. The software further extends the workflow with automatic segmentation of large spectra, automation of fit-regions, and optional integration of theoretical spectra during telluric modeling. PyMolFit does not re-implement atmospheric spectroscopy from first principles. It builds upon established atmospheric radiative-transfer methodology together with publicly available molecular databases and atmospheric models, while providing an independent software implementation and extending the user workflow with additional capabilities.
 
 
-\subsection{Software philosophy}
 
-% Explain the philosophy behind the software.
-%
-% Modularity
-% Extensibility
-% Reproducibility
-% Python ecosystem
-% Object-oriented design
 
-\subsection{Relationship to Molecfit}
-
-% Be completely transparent.
-%
-% Explain what originates from Molecfit.
-% Explain what has been modified.
-% Explain what is entirely new.
-%
-% State clearly that PyMolFit builds upon Molecfit while extending
-% its capabilities.
-
-\subsection{External resources}
-
-% Describe external models and databases.
-%
-% Atmospheric models
-% Weather models
-% Molecular line databases
-%
-% Explain that these are existing scientific resources
-% integrated into PyMolFit.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
