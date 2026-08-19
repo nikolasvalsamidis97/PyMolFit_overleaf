@@ -157,7 +157,7 @@ PyMolFit provides a single entry point, \texttt{correct()}, for correcting spect
 \section{Methodology}
 
 \subsection{Overall workflow}
-\pymolfit accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays together with the required observational metadata. These inputs are converted into a standardised internal representation... into a standardised internal representation while preserving uncertainties, quality flags, and detector or spectral-order structure. It then constructs an atmospheric profile, calculates a high-resolution transmission spectrum, transforms this model to the observational domain, and fits it to the selected pixels. The fitted transmission is finally evaluated across the complete spectrum and used to produce the telluric-corrected output. The following subsections describe each stage of this workflow in detail.
+\pymolfit accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays together with the required observational metadata. These inputs are converted into a standardised internal representation while preserving uncertainties, quality flags, and detector or spectral-order structure. It then constructs an atmospheric profile, calculates a high-resolution transmission spectrum, transforms this model to the observational domain, and fits it to the selected pixels. The fitted transmission is finally evaluated across the complete spectrum and used to produce the telluric-corrected output. The following subsections describe each stage of this workflow in detail.
  
 \subsection{Atmospheric modelling}
 The observational metadata are subsequently used to construct a layered atmospheric profile above the observatory. PyMolFit combines a \MIPAS \citep{MIPAS} reference atmosphere with \GDAS \citep{GDAS} pressure, temperature and water-vapour data. When available, time-local \GDAS profiles are interpolated to the observation time; otherwise, an appropriate average profile is used. Surface meteorological measurements from the spectrum metadata are incorporated into the lowest atmospheric layers. The resulting profile provides the pressure, temperature, molecular composition and line-of-sight column density of each layer required by the radiative-transfer calculation.
@@ -166,7 +166,7 @@ The pressure, temperature, and water-vapour profiles from \GDAS are merged with 
 
 Surface pressure, temperature, and relative humidity, when available, are used to modify the profile near the observatory. Their differences from the initial merged atmosphere are progressively reduced with altitude, rather than being applied as a constant offset to the complete profile. Relative humidity is converted into a water-vapour volume-mixing ratio using the local pressure and temperature. This anchors the lowest atmospheric layers to the conditions measured during the observation while retaining the large-scale vertical structure supplied by \GDAS and \MIPAS.
 
-The discrete atmospheric levels are subsequently converted into finite layers. Pressure, total air number density and molecular number densities are interpolated between adjacent altitude levels, and density-weighted mean pressure and temperature values are calculated for each layer. The mean total air number density follows the ideal gas relation
+The discrete atmospheric levels are subsequently converted into finite layers. Pressure, total air number density and molecular number densities are interpolated between adjacent altitude levels, and density-weighted mean pressure and temperature values are calculated for each layer. The total air number density is calculated from the ideal gas relation
 \begin{equation}
     n_i
     =
@@ -189,7 +189,7 @@ The relationship between altitude and line-of-sight distance is determined from 
 At this stage, the atmosphere is represented by a sequence of layers containing the thermodynamic conditions, molecular abundances, and slant columns required for radiative transfer. The profile itself does not yet contain wavelength-dependent absorption. That dependence is introduced in the following step by evaluating the molecular transitions and atmospheric continuum processes within each layer.
 
 \subsection{Molecular absorption and atmospheric continua}
-Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the molecular line cataloguue (AER \citep{AER} by default) and their temperature-dependent strengths, pressure shifts, Doppler widths and collision-broadened widths are evaluated independently in every atmospheric layer. The resulting Voigt profiles are multiplied by the corresponding molecular columns and summed over all lines and layers. This produces a species-resolved optical-depth model, from which the intrinsic high-resolution atmospheric transmission is obtained through the Beer–Lambert relation \(T(\lambda)=\exp[-\tau(\lambda)]\) \citep{RYBICKI1979}.
+Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the molecular line catalogue (AER \citep{AER} by default), and their temperature-dependent line parameters are evaluated independently in every atmospheric layer. The resulting Voigt profiles are multiplied by the corresponding molecular columns and summed over all lines and layers. This produces a species-resolved optical-depth model, from which the intrinsic high-resolution atmospheric transmission is obtained through the Beer–Lambert relation \(T(\lambda)=\exp[-\tau(\lambda)]\) \citep{RYBICKI1979}.
 
 For a transition \(j\), the AER catalogue specifies the reference line centre \(\tilde{\nu}_{0,j}\), line intensity \(S_j(T_{\mathrm{ref}})\), lower-state energy \(E_j''\), pressure-broadening coefficients, pressure-shift coefficient, temperature exponent, molecular mass, and isotopologue identity. The catalogue intensity is converted from its reference temperature, normally \(T_{\mathrm{ref}}=296\,\mathrm{K}\), to the temperature \(T_i\) of atmospheric layer \(i\) according to
 \begin{equation}
@@ -217,7 +217,7 @@ The line centre is displaced from its reference value by interactions with the s
     +
     \delta_j P_i ,
 \end{equation}
-where \(\delta_j\) is the catalogue pressure-shift coefficient and \(P_i\) is expressed in atmospheres. For the default AER/LNFL/LBLRTM path, the shift is instead scaled by the atmospheric number-density ratio,
+where \(\delta_j\) is the catalogue pressure-shift coefficient and \(P_i\) is expressed in atmospheres. For the default \AER/LBLRTM-compatible path, the shift is instead scaled by the atmospheric number-density ratio,
 \begin{equation}
     \tilde{\nu}_{j,i}
     =
