@@ -189,7 +189,7 @@ The relationship between altitude and line-of-sight distance is determined from 
 At this stage, the atmosphere is represented by a sequence of layers containing the thermodynamic conditions, molecular abundances, and slant columns required for radiative transfer. The profile itself does not yet contain wavelength-dependent absorption. That dependence is introduced in the following step by evaluating the molecular transitions and atmospheric continuum processes within each layer.
 
 \subsection{Molecular absorption and atmospheric continua}
-Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the molecular line catalogue (AER \citep{AER} by default), and their temperature-dependent line parameters are evaluated independently in every atmospheric layer. The resulting Voigt profiles are multiplied by the corresponding molecular columns and summed over all lines and layers. This produces a species-resolved optical-depth model, from which the intrinsic high-resolution atmospheric transmission is obtained through the Beer–Lambert relation \(T(\lambda)=\exp[-\tau(\lambda)]\) \citep{RYBICKI1979}.
+Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the molecular line catalogue (AER \citep{AER} by default), and their temperature-dependent line parameters are evaluated independently in every atmospheric layer. The resulting line profiles are weighted by the corresponding molecular columns and line strengths, and the resulting optical-depth contributions are summed over all lines and atmospheric layers. This produces a species-resolved optical-depth model, from which the intrinsic high-resolution atmospheric transmission is obtained through the Beer–Lambert relation \(T(\lambda)=\exp[-\tau(\lambda)]\) \citep{RYBICKI1979}.
 
 For a transition \(j\), the AER catalogue specifies the reference line centre \(\tilde{\nu}_{0,j}\), line intensity \(S_j(T_{\mathrm{ref}})\), lower-state energy \(E_j''\), pressure-broadening coefficients, pressure-shift coefficient, temperature exponent, molecular mass, and isotopologue identity. The catalogue intensity is converted from its reference temperature, normally \(T_{\mathrm{ref}}=296\,\mathrm{K}\), to the temperature \(T_i\) of atmospheric layer \(i\) according to
 \begin{equation}
@@ -266,14 +266,6 @@ The layer contributions are therefore combined in optical-depth space before con
     =
     \prod_i \exp(-\tau_i).
 \end{equation}
-
-The complete atmospheric optical depth is expressed as
-\begin{equation}
-    \tau_{\mathrm{atm}}(\tilde{\nu})
-    =
-    \sum_r q_r\,\tau_r(\tilde{\nu}),
-\end{equation}
-where each basis component \(r\) contains the line and continuum contributions that share a common scaling parameter \(q_r\). For example, the water-vapour line and continuum optical depths are combined into the same basis component. Components that cannot be constrained by the selected fitting pixels remain fixed at their initial scales.
 
 The default calculation follows an LBLRTM-style panel treatment of the Voigt profiles and their extended wings \citep{LBLRTM}. Opacity is accumulated on successively coarser grids away from each line centre, while a far-wing contribution retains the collective effect of distant lines. This avoids applying one arbitrary wavelength cut-off to every transition and allows dense groups of individually weak lines to contribute to the total opacity. Lines whose estimated optical-depth contribution is numerically negligible may be screened from the detailed calculation.
 
@@ -407,7 +399,7 @@ where \(S(\lambda)\) is the normalized stellar spectrum and \(\mathcal{L}_p\) re
 \subsection{Optimisation}
 The atmospheric and instrumental parameters are determined through bounded non-linear least-squares optimization. At each iteration, the species-resolved optical depths are scaled and combined, converted into transmission, wavelength corrected, convolved with the instrumental line-spread function, and re-binned onto the observed detector grid. A polynomial continuum converts the transmission into a model flux, which is compared with the observation over the selected fitting pixels. Molecular abundance scaling factors, wavelength coefficients and instrumental widths are iteratively updated until the residuals or parameter changes satisfy the convergence criteria.
 
-The thermodynamic structure of the atmosphere is held fixed during this stage. The adjustable atmospheric quantities are primarily multiplicative scale factors applied to the optical-depth contribution of each fitted molecular species. These factors are optimized logarithmically, which guarantees positive molecular columns while allowing physically motivated bounds to be imposed. Depending on the selected configuration, the parameter vector may additionally contain global or order-dependent wavelength-polynomial coefficients, Gaussian and Lorentzian line-spread-function widths, and coefficients describing the wavelength dependence of the instrumental resolution.
+The thermodynamic structure of the atmosphere is held fixed during this stage. The adjustable atmospheric quantities are primarily multiplicative scale factors applied to optical-depth basis components. These factors are optimized logarithmically, which guarantees positive molecular columns while allowing physically motivated bounds to be imposed. Depending on the selected configuration, the parameter vector may additionally contain global or order-dependent wavelength-polynomial coefficients, Gaussian and Lorentzian line-spread-function widths, and coefficients describing the wavelength dependence of the instrumental resolution.
 
 The optimization is restricted to a fitting mask, denoted by \(\mathcal{F}\), containing valid pixels inside the selected fit regions and outside all exclusion regions. For a pixel \(i\), the weighted residual is
 \[
@@ -432,7 +424,7 @@ The optimization therefore returns a single consistent set of molecular, wavelen
 
 
 \subsection{Outputs}
-Following convergence, the fitting masks are removed and the optimized atmospheric, wavelength and instrumental parameters are applied over the complete spectral range. The high-resolution transmission is recomputed, convolved with the fitted line-spread function and re-binned onto every valid detector pixel. Fit and exclusion regions therefore affect parameter estimation only; atmospheric transmission is still evaluated within excluded regions and outside the intervals used for fitting.
+Following convergence, the fitting masks are removed and the optimized atmospheric, wavelength and instrumental parameters are applied over the complete spectral range. The high-resolution transmission is recomputed, projected onto the detector grid using overlap-weighted integration, and convolved with the fitted line-spread function. Fit and exclusion regions therefore affect parameter estimation only; atmospheric transmission is still evaluated within excluded regions and outside the intervals used for fitting.
 
 The corrected spectrum is obtained by dividing the observed flux by the optimized detector-sampled atmospheric transmission,
 \begin{equation}
