@@ -172,7 +172,7 @@ The discrete atmospheric levels are subsequently converted into finite layers. P
     =
     \frac{P_i}{k_{\mathrm{B}}T_i},
 \end{equation}
-where \(P_i\), \(T_i\) and \(n_i\) are the density-weighted pressure, temperature and total number density of layer \(i\), respectively. For a molecular species \(s\), the line-of-sight column density through the layer is
+where \(P_i\) is the density-weighted pressure of layer \(i\), expressed in pascals, while \(T_i\) and \(n_i\) are its temperature and total number density, respectively. In the ideal-gas relation, \(P_i\) is expressed in pascals. In the spectroscopic expressions below, \(P_i^{(\mathrm{atm})}\) denotes the same layer pressure expressed in atmospheres. For a molecular species \(s\), the line-of-sight column density through the layer is
 \begin{equation}
     N_{s,i}
     =
@@ -189,9 +189,10 @@ The relationship between altitude and line-of-sight distance is determined from 
 At this stage, the atmosphere is represented by a sequence of layers containing the thermodynamic conditions, molecular abundances, and slant columns required for radiative transfer. The profile itself does not yet contain wavelength-dependent absorption. That dependence is introduced in the following step by evaluating the molecular transitions and atmospheric continuum processes within each layer.
 
 \subsection{Molecular absorption and atmospheric continua}
-Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the molecular line catalogue (AER \citep{AER} by default), and their temperature-dependent line parameters are evaluated independently in every atmospheric layer. The resulting line profiles are weighted by the corresponding molecular columns and line strengths, and the resulting optical-depth contributions are summed over all lines and atmospheric layers. This produces a line-absorption optical-depth model, from which the intrinsic high-resolution atmospheric transmission is obtained through the Beer–Lambert relation \(T(\lambda)=\exp[-\tau(\lambda)]\) \citep{RYBICKI1979}.
+Molecular absorption is calculated on a wavelength grid finer than the observed detector sampling. Relevant transitions are selected from the molecular line catalogue (AER \citep{AER} by default), and their temperature-dependent line parameters are evaluated independently in every atmospheric layer. The resulting line profiles are weighted by the corresponding molecular columns and line strengths, and their optical-depth contributions are summed over all lines and atmospheric layers. This produces the discrete-line optical depth. After the atmospheric continuum and scattering contributions described below are added, the total high-resolution optical depth yields the intrinsic atmospheric transmission through the Beer--Lambert relation
+\(T_{\mathrm{atm}}(\lambda)=\exp[-\tau_{\mathrm{atm}}(\lambda)]\) \citep{RYBICKI1979}.
 
-For a transition \(j\), the AER catalogue specifies the reference line centre \(\tilde{\nu}_{0,j}\), line intensity \(S_j(T_{\mathrm{ref}})\), lower-state energy \(E_j''\), pressure-broadening coefficients, pressure-shift coefficient, temperature exponent, molecular mass, and isotopologue identity. The catalogue intensity is converted from its reference temperature, normally \(T_{\mathrm{ref}}=296\,\mathrm{K}\), to the temperature \(T_i\) of atmospheric layer \(i\) according to
+For a transition \(j\), the AER line record provides the reference line centre \(\tilde{\nu}_{0,j}\), line intensity \(S_j(T_{\mathrm{ref}})\), lower-state energy \(E_j''\), pressure-broadening coefficients, pressure-shift coefficient, temperature exponent, and molecule and isotopologue identifiers. PyMolFit uses these identifiers to obtain the corresponding molecular mass and isotopologue-specific partition data. Following the HITRAN temperature-scaling convention \citep{HITRAN}, the catalogue intensity is converted from its reference temperature, normally \(T_{\mathrm{ref}}=296\,\mathrm{K}\), to the temperature \(T_i\) of atmospheric layer \(i\) according to
 \begin{equation}
 \begin{split}
 S_j(T_i) ={}& S_j(T_{\mathrm{ref}})
@@ -209,21 +210,27 @@ S_j(T_i) ={}& S_j(T_{\mathrm{ref}})
 \end{equation}
 where \(Q_{\eta_j}(T)\) is the partition function of the isotopologue associated with transition \(j\), and \(c_2=hc/k_{\mathrm{B}}\) is the second radiation constant. When energies and wavenumbers are expressed in \(\mathrm{cm^{-1}}\), \(c_2\) is expressed in \(\mathrm{cm\,K}\). The exponential term accounts for the temperature-dependent population of the lower energy state, while the final ratio accounts for stimulated emission.
 
-The line centre is displaced from its reference value by interactions with the surrounding gas. The applied pressure-shift convention depends on the source and processing path of the line data. For traditional HITRAN text data, the shifted centre in atmospheric layer \(i\) is
+The line centre is displaced from its reference value by interactions with the surrounding gas. Because the catalogue pressure-shift and pressure-broadening coefficients are defined per atmosphere, the layer pressure used in the spectroscopic equations is written as
 \begin{equation}
-    \tilde{\nu}_{j,i}
+    P_i^{(\mathrm{atm})}
     =
-    \tilde{\nu}_{0,j}
-    +
-    \delta_j P_i ,
+    \frac{P_i}{101325\,\mathrm{Pa}},
 \end{equation}
-where \(\delta_j\) is the catalogue pressure-shift coefficient and \(P_i\) is expressed in atmospheres. For the default AER/LBLRTM-compatible path, the shift is instead scaled by the atmospheric number-density ratio,
+where \(P_i\) is the physical layer pressure in pascals and \(P_i^{(\mathrm{atm})}\) is its numerical value in standard atmospheres. The applied pressure-shift convention depends on the source and processing path of the line data. For traditional HITRAN text data, the shifted centre in atmospheric layer \(i\) is
 \begin{equation}
     \tilde{\nu}_{j,i}
     =
     \tilde{\nu}_{0,j}
     +
-    \delta_j P_i
+    \delta_j P_i^{(\mathrm{atm})},
+\end{equation}
+where \(\delta_j\) is the catalogue pressure-shift coefficient. For the default AER/LBLRTM-compatible path, the pressure shift additionally includes the atmospheric density-ratio scaling,
+\begin{equation}
+    \tilde{\nu}_{j,i}
+    =
+    \tilde{\nu}_{0,j}
+    +
+    \delta_j P_i^{(\mathrm{atm})}
     \frac{T_{\mathrm{ref}}}{T_i},
 \end{equation}
 where \(T_{\mathrm{ref}}=296\,\mathrm{K}\). When broadener-specific information is available, \pymolfit additionally accounts for the relative abundances and pressure-shift coefficients of the relevant collision partners.
@@ -239,7 +246,7 @@ where \(m_j\) is the molecular mass. Collisions produce a Lorentzian contributio
 \begin{equation}
     \gamma_{\mathrm{L},j,i}
     =
-    P_i
+    P_i^{(\mathrm{atm})}
     \left[
         (1-x_{s,i})\gamma_{\mathrm{air},j}
         +
@@ -269,7 +276,7 @@ The layer contributions are therefore combined in optical-depth space before con
 
 The default calculation follows an LBLRTM-style panel treatment of the Voigt profiles and their extended wings \citep{LBLRTM}. Opacity is accumulated on successively coarser grids away from each line centre, while a far-wing contribution retains the collective effect of distant lines. This avoids applying one arbitrary wavelength cut-off to every transition and allows dense groups of individually weak lines to contribute to the total opacity. Lines whose estimated optical-depth contribution is numerically negligible may be screened from the detailed calculation.
 
-Discrete transitions alone do not describe all atmospheric extinction. Broad absorption produced by unresolved line wings and intermolecular interactions is represented by atmospheric continuum components. For water vapour, \pymolfit includes self and foreign continuum absorption \citep{MTCKD}: the self component depends on interactions between water molecules, whereas the foreign component describes interactions between water and the remaining atmospheric gas \citep{MTCKD}. A corresponding carbon-dioxide continuum is included when \(\mathrm{CO_2}\) is modelled. Additional collision-induced absorption from molecular pairs, \(N_2\) and \(O_2\) continuum branches, and Rayleigh scattering can be enabled when required. These atmospheric continua are distinct from the polynomial spectral continuum introduced later to represent the broad shape of the observed source spectrum.
+Discrete transitions alone do not describe all atmospheric extinction. Broad absorption produced by unresolved line wings and intermolecular interactions is represented by atmospheric continuum components. For water vapour, \pymolfit includes MT\_CKD-style self and foreign continuum absorption: the self component describes interactions between water molecules, whereas the foreign component describes interactions between water and the remaining atmospheric gas \citep{MTCKD}. A corresponding carbon-dioxide continuum is included when \(\mathrm{CO_2}\) is modelled. Additional collision-induced absorption from molecular pairs, \(N_2\) and \(O_2\) continuum branches, and Rayleigh scattering can be enabled when required. These atmospheric continua are distinct from the polynomial spectral continuum introduced later to represent the broad shape of the observed source spectrum.
 
 All enabled absorption contributions are additive in optical depth. PyMolFit groups contributions that share a common fitting parameter into optical-depth basis components. The total high-resolution optical depth is therefore expressed as
 
@@ -279,8 +286,7 @@ All enabled absorption contributions are additive in optical depth. PyMolFit gro
     \sum_r q_r\,\tau_r(\tilde{\nu}),
 \end{equation}
 
-where \(r\) denotes an optical-depth basis component and \(q_r\) is its fitted scaling parameter. A basis component may contain multiple physical contributions, such as molecular line absorption and continuum absorption from the same species. These scaling parameters initially equal unity and are
-subsequently adjusted during fitting. 
+where \(r\) denotes an optical-depth basis component and \(q_r\) is its fitted or fixed scale factor. A basis component may contain multiple physical contributions that share a common scale, such as molecular line absorption and continuum absorption from the same species. Fitted scales initially equal unity and are subsequently adjusted during optimisation. Components that are fixed explicitly or cannot be constrained by the selected fitting pixels remain at their initial values.
 
 The resulting transmission is a dimensionless, intrinsic atmospheric spectrum evaluated at high spectral resolution. It does not yet include residual errors in the observational wavelength solution, broadening by the spectrograph, or integration over finite detector pixels. Furthermore, it describes only the fraction of incident light transmitted through the atmosphere and therefore does not reproduce the broad flux distribution of the astronomical source. These atmospheric and observational representations must be combined before the model can be compared directly with the measured spectrum.
 
@@ -310,16 +316,7 @@ where \(a_k\) are the wavelength coefficients and \(p\) is the selected polynomi
 \end{equation}
 This operation aligns the atmospheric absorption with the observation without modifying the wavelength array stored in the final output.
 
-The line-spread function describes how the spectrograph redistributes monochromatic incident light over neighbouring detector pixels. \pymolfit represents it using a normalised composite kernel that may contain Gaussian, Lorentzian, and boxcar components. The Gaussian component describes the central instrumental broadening associated with the resolving power, the Lorentzian component allows extended instrumental wings, and the boxcar component represents a finite slit width or another approximately rectangular instrumental response. Conceptually, the instrumentally broadened transmission is
-\begin{equation}
-    T_{\mathrm{LSF}}(\lambda)
-    =
-    \int
-    T_{\mathrm{atm}}(\lambda')
-    K(\lambda-\lambda';\boldsymbol{\theta}_{\mathrm{LSF}})
-    \,\mathrm{d}\lambda',
-\end{equation}
-where \(K\) is the normalised line-spread function and \(\boldsymbol{\theta}_{\mathrm{LSF}}\) contains its width parameters.
+The line-spread function describes how the spectrograph redistributes monochromatic incident light over neighbouring detector pixels. \pymolfit represents it using a normalised composite kernel that may contain Gaussian, Lorentzian, and boxcar components. The Gaussian component describes the central instrumental broadening associated with the resolving power, the Lorentzian component allows extended instrumental wings, and the boxcar component represents a finite slit width or another approximately rectangular instrumental response. In the default overlap-weighted mode, this kernel is applied in detector space after integration of the high-resolution transmission over the detector-pixel intervals, as defined below. Alternative rebinning modes may use a different numerical ordering.
 
 The instrumental width can be held constant in detector pixels or allowed to vary smoothly with wavelength according to
 \begin{equation}
@@ -391,9 +388,9 @@ Alternatively, PyMolFit supports a joint stellar--telluric forward model in whic
 where \(S(\lambda)\) is the normalised stellar spectrum and \(\mathcal{L}_p\) represents the instrumental line-spread function and detector integration. The stellar model is only used during parameter estimation; the final correction removes the atmospheric contribution alone.
 
 \subsection{Optimisation}
-The atmospheric and instrumental parameters are determined through bounded non-linear least-squares optimisation. At each iteration, the optical-depth basis components are scaled and combined, converted into transmission, wavelength corrected, convolved with the instrumental line-spread function, and re-binned onto the observed detector grid. A polynomial continuum converts the transmission into a model flux, which is compared with the observation over the selected fitting pixels. Molecular abundance scaling factors, wavelength coefficients and instrumental widths are iteratively updated until the residuals or parameter changes satisfy the convergence criteria.
+The atmospheric and instrumental parameters are determined through bounded non-linear least-squares optimisation. At each iteration, the optical-depth basis components are scaled and combined and converted into transmission. The configured observational operator then applies the wavelength correction, detector integration, and line-spread-function convolution in the sequence defined by the selected rebinning mode. A polynomial continuum converts the detector-sampled transmission into a model flux, which is compared with the observation over the selected fitting pixels. Optical-depth component scales, wavelength coefficients, and instrumental widths are iteratively updated until the residuals or parameter changes satisfy the convergence criteria.
 
-The thermodynamic structure of the atmosphere is held fixed during this stage. The adjustable atmospheric quantities are primarily multiplicative scale factors applied to optical-depth basis components. These factors are optimised logarithmically, which guarantees positive molecular columns while allowing physically motivated bounds to be imposed. Depending on the selected configuration, the parameter vector may additionally contain global or order-dependent wavelength-polynomial coefficients, Gaussian and Lorentzian line-spread-function widths, and coefficients describing the wavelength dependence of the instrumental resolution.
+The thermodynamic structure of the atmosphere is held fixed during this stage. The adjustable atmospheric quantities are primarily multiplicative scale factors applied to optical-depth basis components. Fitted component scales are optimised logarithmically, ensuring positive scale factors, while explicitly fixed or insufficiently constrained components remain at their initial values. For molecular line components, a scale factor may be interpreted as a relative column-density adjustment; continuum, collision-induced-absorption, and scattering components instead represent opacity scales. Depending on the selected configuration, the parameter vector may additionally contain global or order-dependent wavelength-polynomial coefficients, Gaussian and Lorentzian line-spread-function widths, and coefficients describing the wavelength dependence of the instrumental resolution.
 
 The optimisation is restricted to a fitting mask, denoted by \(\mathcal{F}\), containing valid pixels inside the selected fit regions and outside all exclusion regions. For a pixel \(i\), the weighted residual is
 \[
@@ -403,7 +400,7 @@ r_i =
 {\sigma_i},
 \qquad i\in\mathcal{F},
 \]
-where \(F_{\mathrm{obs},i}\) and \(\sigma_i\) are the observed flux and uncertainty, \(w_i\) is an optional confidence weight, and \(\boldsymbol{\theta}\) contains the fitted parameters. When observational uncertainties are unavailable, PyMolFit assigns a default uncertainty corresponding to 1\% of the mean fitted flux. Consequently, reduced \(\chi^2\) values should primarily be interpreted as optimisation diagnostics rather than independently calibrated statistical goodness-of-fit measures. With the standard linear loss, the minimized objective is
+where \(F_{\mathrm{obs},i}\) and \(\sigma_i\) are the observed flux and uncertainty, \(w_i\) is an optional confidence weight, and \(\boldsymbol{\theta}\) contains the fitted parameters. When observational uncertainties are unavailable, PyMolFit assigns a default uncertainty corresponding to 1\% of the mean fitted flux. Consequently, reduced \(\chi^2\) values should primarily be interpreted as optimisation diagnostics rather than independently calibrated statistical goodness-of-fit measures. With the standard linear loss, the minimised objective is
 \[
 \chi^2(\boldsymbol{\theta}) =
 \sum_{i\in\mathcal{F}} r_i^2.
@@ -418,7 +415,7 @@ The optimisation therefore returns a single consistent set of molecular, wavelen
 
 
 \subsection{Outputs}
-Following convergence, the fitting masks are removed and the optimised atmospheric, wavelength and instrumental parameters are applied over the complete spectral range. The high-resolution transmission is recomputed, projected onto the detector grid using overlap-weighted integration, and convolved with the fitted line-spread function. Fit and exclusion regions therefore affect parameter estimation only; atmospheric transmission is still evaluated within excluded regions and outside the intervals used for fitting.
+Following convergence, the fitting mask no longer restricts model evaluation, and the optimised atmospheric, wavelength and instrumental parameters are applied over the complete spectral range. The high-resolution transmission is recomputed, projected onto the detector grid using overlap-weighted integration, and convolved with the fitted line-spread function. Fit and exclusion regions therefore affect parameter estimation only; atmospheric transmission is still evaluated within excluded regions and outside the intervals used for fitting.
 
 The corrected spectrum is obtained by dividing the observed flux by the optimised detector-sampled atmospheric transmission,
 \begin{equation}
@@ -428,17 +425,17 @@ The corrected spectrum is obtained by dividing the observed flux by the optimise
 \end{equation}
 where \(T_i\) is the fitted atmospheric transmission at detector pixel \(i\). The original wavelength sampling, spectral-order structure and detector gaps are retained, while available observational and model uncertainties are propagated through the division. Pixels with transmission below a specified threshold are masked because the atmospheric absorption has removed too much information for a stable correction.
 
-When both observational and transmission uncertainties are available, the corrected uncertainty is propagated as
+When observational and transmission uncertainties are both available, the corrected uncertainty is approximated as
 \[
 \sigma_{\mathrm{corr},i}^{2}
 =
 \left(\frac{\sigma_{F,i}}{T_i}\right)^2
 +
-\left(\frac{F_{\mathrm{obs},i}\sigma_{T,i}}{T_i^2}\right)^2,
+\left(\frac{F_{\mathrm{obs},i}\sigma_{T,i}}{T_i^2}\right)^2.
 \]
-assuming that the available observational and model uncertainties are independent. If no transmission uncertainty has been estimated, only the first term is retained. This expression also illustrates why corrections become unstable at low transmission: both observational noise and atmospheric-model errors are amplified rapidly as \(T_i\) approaches zero. PyMolFit therefore masks such pixels instead of clipping their corrected values; the standard minimum-transmission threshold is \(T_{\min}=0.01\).
+This first-order expression treats the observational and fitted-transmission uncertainties as independent. Because the transmission is inferred from the observation, their covariance is generally not zero; the reported uncertainty should therefore be interpreted as a conditional approximation that neglects this covariance. If only one uncertainty source is available, only its corresponding term is retained. The expression also illustrates why corrections become unstable at low transmission: observational noise and atmospheric-model uncertainty are amplified rapidly as \(T_i\) approaches zero. PyMolFit therefore masks such pixels instead of clipping their corrected values; the standard minimum-transmission threshold is \(T_{\min}=0.01\).
 
-The returned data product preserves the association between each corrected pixel and its original spectral order or detector segment. In addition to the corrected flux, it records the observed flux, detector-sampled transmission, fitted forward model, observational and propagated uncertainties, fitting and correction masks, molecular scale factors, wavelength coefficients, line-spread-function parameters, continuum coefficients and optimisation diagnostics. Provenance metadata identify the atmospheric-profile source, molecular catalogue and principal configuration choices used for the calculation.
+The returned data product preserves the association between each corrected pixel and its original spectral order or detector segment. In addition to the corrected flux, it records the observed flux, detector-sampled transmission, fitted forward model, available observational and propagated uncertainties, fitting and correction masks, molecular scale factors, wavelength coefficients, line-spread-function parameters, continuum coefficients and optimisation diagnostics. Provenance metadata identify the atmospheric-profile source, molecular catalogue and principal configuration choices used for the calculation.
 
 The corrected spectrum represents the input observation with the fitted atmospheric transmission divided out. Astrophysical features are not removed merely because they were excluded from parameter estimation, and detector gaps or invalid pixels are not interpolated. Similarly, wavelengths affected by saturated atmospheric absorption remain masked because the information removed by the atmosphere cannot be reconstructed reliably. The output consequently retains both the scientific spectrum and the diagnostic information required to evaluate the telluric correction.
 
