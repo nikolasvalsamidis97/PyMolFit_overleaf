@@ -217,7 +217,7 @@ The line centre is displaced from its reference value by interactions with the s
     +
     \delta_j P_i ,
 \end{equation}
-where \(\delta_j\) is the catalogue pressure-shift coefficient and \(P_i\) is expressed in atmospheres. For the default \AER/LBLRTM-compatible path, the shift is instead scaled by the atmospheric number-density ratio,
+where \(\delta_j\) is the catalogue pressure-shift coefficient and \(P_i\) is expressed in atmospheres. For the default AER/LBLRTM-compatible path, the shift is instead scaled by the atmospheric number-density ratio,
 \begin{equation}
     \tilde{\nu}_{j,i}
     =
@@ -270,7 +270,7 @@ The complete atmospheric optical depth is expressed as
 \end{equation}
 where each basis component \(r\) contains the line and continuum contributions that share a common scaling parameter \(q_r\). For example, the water-vapour line and continuum optical depths are combined into the same basis component. Components that cannot be constrained by the selected fitting pixels remain fixed at their initial scales.
 
-The default calculation follows an LBLRTM-style \citep{LBLRTM} panel treatment of the Voigt profiles and their extended wings. Opacity is accumulated on successively coarser grids away from each line centre, while a far-wing contribution retains the collective effect of distant lines. This avoids applying one arbitrary wavelength cut-off to every transition and allows dense groups of individually weak lines to contribute to the total opacity. Lines whose estimated optical-depth contribution is numerically negligible may be screened from the detailed calculation.
+The default calculation follows an LBLRTM-style panel treatment of the Voigt profiles and their extended wings \citep{LBLRTM}. Opacity is accumulated on successively coarser grids away from each line centre, while a far-wing contribution retains the collective effect of distant lines. This avoids applying one arbitrary wavelength cut-off to every transition and allows dense groups of individually weak lines to contribute to the total opacity. Lines whose estimated optical-depth contribution is numerically negligible may be screened from the detailed calculation.
 
 Discrete transitions alone do not describe all atmospheric extinction. Broad absorption produced by unresolved line wings and intermolecular interactions is represented by atmospheric continuum components. For water vapour, \pymolfit includes self and foreign continuum absorption: the self component depends on interactions between water molecules, whereas the foreign component describes interactions between water and the remaining atmospheric gas. A corresponding carbon-dioxide continuum is included when \(\mathrm{CO_2}\) is modelled. Additional collision-induced absorption from molecular pairs, \(N_2\) and \(O_2\) continuum branches, and Rayleigh scattering can be enabled when required. These atmospheric continua are distinct from the polynomial spectral continuum introduced later to represent the broad shape of the observed source spectrum.
 
