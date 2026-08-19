@@ -131,7 +131,7 @@ While several software packages for telluric correction are already available, P
 \subsection{Relationship to Molecfit}
 PyMolFit builds upon the physical methodology established by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2}, adopting the same general approach to model-based telluric correction based on atmospheric modelling and line-by-line radiative-transfer calculations. Rather than interfacing with or executing Molecfit itself, PyMolFit provides an independent implementation of these methods written entirely in Python. The software therefore reproduces the overall modelling philosophy while allowing tighter integration with modern Python-based astronomical analysis workflows.
 
-PyMolFit is not intended to be a bit-for-bit reproduction of either Molecfit or LBLRTM. It uses an independent numerical implementation, and remaining differences in the radiative-transfer and optimization procedures are evaluated in Sect.~\ref{sec:validation}.
+PyMolFit is not intended to be a bit-for-bit reproduction of either Molecfit or LBLRTM. It uses an independent numerical implementation, and remaining differences in the radiative-transfer and optimisation procedures are evaluated in Sect.~\ref{sec:validation}.
 
 PyMolFit exposes the telluric-correction workflow through a unified Python API that accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays. The public workflow includes automatic segmentation while preserving physical detector or order groups, automatic and interactive fit-region selection, and optional treatment of theoretical stellar spectra through feature masking or a joint
 stellar--telluric forward model. PyMolFit does not introduce a new atmospheric-spectroscopy formalism; instead, it implements established atmospheric and line-by-line radiative-transfer methods in Python without executing the Molecfit or LBLRTM software.
@@ -195,7 +195,7 @@ For a transition \(j\), the AER catalogue specifies the reference line centre \(
 \begin{equation}
 \begin{split}
 S_j(T_i) ={}& S_j(T_{\mathrm{ref}})
-\frac{Q_j(T_{\mathrm{ref}})}{Q_j(T_i)}
+\frac{Q_{\eta_j}(T_{\mathrm{ref}})}{Q_{\eta_j}(T_i)}
 \exp\left[
 -c_2 E_j''
 \left(
@@ -364,17 +364,12 @@ For the standard telluric-only correction, the forward model at detector pixel \
     =
     C_p\,T_p .
 \end{equation}
-When a theoretical stellar spectrum is supplied, its predicted stellar features are excluded from atmospheric parameter estimation by default. In the optional joint stellar--telluric mode, the forward model instead becomes
-\begin{equation}
-    F_{\mathrm{model},p}
-    =
-    C_p\,
-    \mathcal{L}_p
-    \left[
-        S(\lambda)T_{\mathrm{atm}}(\lambda)
-    \right],
-\end{equation}
-where \(S(\lambda)\) is the normalised theoretical stellar spectrum and \(\mathcal{L}_p\) represents instrumental convolution and integration over detector pixel \(p\). The corresponding correction removes only the atmospheric contribution and does not divide out the stellar spectrum.
+When a theoretical stellar spectrum is supplied, PyMolFit can account for
+astrophysical spectral features that overlap with telluric absorption. These
+features are either excluded from atmospheric parameter estimation through
+stellar masking or included through the optional joint stellar--telluric
+forward model described in the following subsection.
+
 The continuum is deliberately restricted to smooth variations and is not intended to reproduce narrow stellar or circumstellar lines. Such features are normally excluded from the fitting pixels or, when a theoretical stellar spectrum is supplied, represented by the optional stellar forward model.
 
 These operations define how a proposed set of molecular, wavelength, instrumental, and continuum parameters is converted into a model on the observed detector grid. The remaining task is to determine which parameter values provide the best agreement with the measured flux.
@@ -383,8 +378,7 @@ These operations define how a proposed set of molecular, wavelength, instrumenta
 When a theoretical stellar spectrum is supplied, PyMolFit can account for astrophysical spectral features that overlap with telluric absorption. In the standard masking approach, the broadened theoretical spectrum is used to identify wavelength regions where stellar features should not contribute to the telluric parameter estimation. These regions are excluded from the fitting mask, while the atmospheric transmission is still evaluated across the full
 spectrum.
 
-Alternatively, PyMolFit supports a joint stellar--telluric forward model in which the theoretical stellar spectrum is multiplied by the atmospheric transmission before comparison with the observation. The model flux is then
-represented as
+Alternatively, PyMolFit supports a joint stellar--telluric forward model in which the theoretical stellar spectrum is multiplied by the atmospheric transmission before comparison with the observation. The model flux is then represented as
 \begin{equation}
     F_{\mathrm{model},p}
     =
@@ -397,11 +391,11 @@ represented as
 where \(S(\lambda)\) is the normalized stellar spectrum and \(\mathcal{L}_p\) represents the instrumental line-spread function and detector integration. The stellar model is only used during parameter estimation; the final correction removes the atmospheric contribution alone.
 
 \subsection{Optimisation}
-The atmospheric and instrumental parameters are determined through bounded non-linear least-squares optimization. At each iteration, the species-resolved optical depths are scaled and combined, converted into transmission, wavelength corrected, convolved with the instrumental line-spread function, and re-binned onto the observed detector grid. A polynomial continuum converts the transmission into a model flux, which is compared with the observation over the selected fitting pixels. Molecular abundance scaling factors, wavelength coefficients and instrumental widths are iteratively updated until the residuals or parameter changes satisfy the convergence criteria.
+The atmospheric and instrumental parameters are determined through bounded non-linear least-squares optimisation. At each iteration, The original wavelength sampling, spectral-order structure and detector gaps are retained, while available observational and model uncertainties are propagated through the divisionthe optical-depth basis components are scaled and combined, converted into transmission, wavelength corrected, convolved with the instrumental line-spread function, and re-binned onto the observed detector grid. A polynomial continuum converts the transmission into a model flux, which is compared with the observation over the selected fitting pixels. Molecular abundance scaling factors, wavelength coefficients and instrumental widths are iteratively updated until the residuals or parameter changes satisfy the convergence criteria.
 
 The thermodynamic structure of the atmosphere is held fixed during this stage. The adjustable atmospheric quantities are primarily multiplicative scale factors applied to optical-depth basis components. These factors are optimized logarithmically, which guarantees positive molecular columns while allowing physically motivated bounds to be imposed. Depending on the selected configuration, the parameter vector may additionally contain global or order-dependent wavelength-polynomial coefficients, Gaussian and Lorentzian line-spread-function widths, and coefficients describing the wavelength dependence of the instrumental resolution.
 
-The optimization is restricted to a fitting mask, denoted by \(\mathcal{F}\), containing valid pixels inside the selected fit regions and outside all exclusion regions. For a pixel \(i\), the weighted residual is
+The optimisation is restricted to a fitting mask, denoted by \(\mathcal{F}\), containing valid pixels inside the selected fit regions and outside all exclusion regions. For a pixel \(i\), the weighted residual is
 \[
 r_i =
 \sqrt{w_i}\,
@@ -416,11 +410,11 @@ where \(F_{\mathrm{obs},i}\) and \(\sigma_i\) are the observed flux and uncertai
 \]
 Robust loss functions may instead be used to reduce the influence of outliers, unmasked astrophysical features, cosmic rays, or defective pixels.
 
-For a given set of non-linear atmospheric, wavelength and instrumental parameters, the continuum coefficients may be determined conditionally through weighted linear least squares. This reduces the dimensionality of the non-linear problem and prevents the continuum parameters from unnecessarily slowing the optimization. For spectra containing multiple orders or discontinuous detector segments, molecular scale factors may be shared across the observation, while continuum and wavelength terms can be assigned locally according to the selected fitting model.
+For a given set of non-linear atmospheric, wavelength and instrumental parameters, the continuum coefficients may be determined conditionally through weighted linear least squares. This reduces the dimensionality of the non-linear problem and prevents the continuum parameters from unnecessarily slowing the optimisation. For spectra containing multiple orders or discontinuous detector segments, molecular scale factors may be shared across the observation, while continuum and wavelength terms can be assigned locally according to the selected fitting model.
 
-Initial wavelength and instrumental parameters can be estimated through coarse pilot searches before the full optimization. The bounded least-squares calculation then proceeds until the relative change in the objective function, the parameter-step size or the gradient satisfies its corresponding convergence tolerance, or until the maximum number of model evaluations is reached. When requested, parameter uncertainties are estimated locally from the weighted Jacobian around the optimum. These uncertainties describe the statistical curvature of the fitted model and do not include systematic errors in the atmospheric profile, molecular catalogue or instrumental parameterisation.
+Initial wavelength and instrumental parameters can be estimated through coarse pilot searches before the full optimisation. The bounded least-squares calculation then proceeds until the relative change in the objective function, the parameter-step size or the gradient satisfies its corresponding convergence tolerance, or until the maximum number of model evaluations is reached. When requested, parameter uncertainties are estimated locally from the weighted Jacobian around the optimum. These uncertainties describe the statistical curvature of the fitted model and do not include systematic errors in the atmospheric profile, molecular catalogue or instrumental parameterisation.
 
-The optimization therefore returns a single consistent set of molecular, wavelength, instrumental and continuum parameters inferred only from the selected fitting pixels. Once these parameters have converged, the fitting mask has completed its role and the optimized model can be propagated over the full observational wavelength domain.
+The optimisation therefore returns a single consistent set of molecular, wavelength, instrumental and continuum parameters inferred only from the selected fitting pixels. Once these parameters have converged, the fitting mask has completed its role and the optimized model can be propagated over the full observational wavelength domain.
 
 
 \subsection{Outputs}
@@ -432,7 +426,7 @@ The corrected spectrum is obtained by dividing the observed flux by the optimize
     =
     \frac{F_{\mathrm{obs},i}}{T_i},
 \end{equation}
-where \(T_i\) is the fitted atmospheric transmission at detector pixel \(i\). The original wavelength sampling, spectral-order structure and detector gaps are retained, while observational and model uncertainties are propagated through the division. Pixels with transmission below a specified threshold are masked because the atmospheric absorption has removed too much information for a stable correction.
+where \(T_i\) is the fitted atmospheric transmission at detector pixel \(i\). The original wavelength sampling, spectral-order structure and detector gaps are retained, while available observational and model uncertainties are propagated through the division. Pixels with transmission below a specified threshold are masked because the atmospheric absorption has removed too much information for a stable correction.
 
 When both observational and transmission uncertainties are available, the corrected uncertainty is propagated as
 \[
@@ -444,7 +438,7 @@ When both observational and transmission uncertainties are available, the correc
 \]
 assuming that the available observational and model uncertainties are independent. If no transmission uncertainty has been estimated, only the first term is retained. This expression also illustrates why corrections become unstable at low transmission: both observational noise and atmospheric-model errors are amplified rapidly as \(T_i\) approaches zero. PyMolFit therefore masks such pixels instead of clipping their corrected values; the standard minimum-transmission threshold is \(T_{\min}=0.01\).
 
-The returned data product preserves the association between each corrected pixel and its original spectral order or detector segment. In addition to the corrected flux, it records the observed flux, detector-sampled transmission, fitted forward model, observational and propagated uncertainties, fitting and correction masks, molecular scale factors, wavelength coefficients, line-spread-function parameters, continuum coefficients and optimization diagnostics. Provenance metadata identify the atmospheric-profile source, molecular catalogue and principal configuration choices used for the calculation.
+The returned data product preserves the association between each corrected pixel and its original spectral order or detector segment. In addition to the corrected flux, it records the observed flux, detector-sampled transmission, fitted forward model, observational and propagated uncertainties, fitting and correction masks, molecular scale factors, wavelength coefficients, line-spread-function parameters, continuum coefficients and optimisation diagnostics. Provenance metadata identify the atmospheric-profile source, molecular catalogue and principal configuration choices used for the calculation.
 
 The corrected spectrum represents the input observation with the fitted atmospheric transmission divided out. Astrophysical features are not removed merely because they were excluded from parameter estimation, and detector gaps or invalid pixels are not interpolated. Similarly, wavelengths affected by saturated atmospheric absorption remain masked because the information removed by the atmosphere cannot be reconstructed reliably. The output consequently retains both the scientific spectrum and the diagnostic information required to evaluate the telluric correction.
 
