@@ -157,12 +157,12 @@ This Beer--Lambert relation gives the fraction of incident light transmitted thr
 \begin{figure*}[t]
     \centering
     \includegraphics[width=\textwidth]{Images/Interactive_selector.png}
-    \caption{Observed and telluric-corrected spectra with fitting intervals shown in green and stellar exclusions in orange. The lower panel shows the fitted atmospheric transmission.}
+    \caption{PyMolFit's interactive region selector showing the observed AU Mic spectrum around the Na\,I D doublet. Green and orange shading indicate automatically selected fitting and stellar exclusion intervals, respectively; exclusions take precedence where they overlap. The right-hand controls allow manual region editing, adjustment of the number of catalogue transitions used to propose fitting intervals, and modification of the stellar-template, broadening, and masking parameters used to regenerate the exclusions. Blue ticks mark H$_2$O transitions from the AER catalogue, providing wavelength references for identifying telluric features.}
     \label{fig:Interactive_selector}
 \end{figure*}
 PyMolFit preserves the spectral-order and detector divisions of the input data while subdividing their wavelength coverage into smaller intervals for computation. Physical groups are identified from the input metadata or, when these identifiers are unavailable, from large gaps in the wavelength sampling. Each group is subdivided into processing segments with a configurable target wavelength span of 50\,\AA\ by default. Segments are subdivided further if the high-resolution atmospheric model would require more than the permitted number of wavelength points, set to two million per segment by default. This limits memory use without coarsening the model grid or resampling the observed spectrum.
 
-Fitting intervals define which parts of the observed spectrum are used to determine the correction parameters. They can be specified directly, drawn in the interactive selector, or proposed automatically around telluric lines from the AER catalogue \citep{AER}. Automatic selection orders the candidate lines by the score
+Fitting intervals define which parts of the observed spectrum are used to determine the correction parameters. They can be specified directly, drawn in the interactive selector shown in Fig.~\ref{fig:Interactive_selector}, or proposed automatically around telluric lines from the AER catalogue \citep{AER}. Automatic selection orders the candidate lines by the score
 \begin{equation}
     A_j = S_j(T_{\mathrm{ref}})\,N_{s(j),\mathrm{rep}},
 \end{equation}
@@ -172,11 +172,12 @@ The requested number of highest-scoring lines within the observed wavelength cov
 
 Exclusion intervals mark wavelength ranges that should not influence the telluric fit, for example because they contain stellar features or detector defects. They can be specified directly, drawn in the interactive selector, or generated automatically from a theoretical stellar spectrum. An exclusion takes precedence wherever it overlaps a fitting interval.
 
-When a theoretical stellar spectrum is supplied, PyMolFit normalises it using an estimated continuum and broadens it for stellar rotation and instrumental resolution. Its wavelengths are converted to the appropriate wavelength medium and reference frame using the supplied stellar radial velocity and the observation's frame correction. A small residual velocity offset can be refined by cross-correlation with the observed spectrum. Features whose fractional deviation from the template continuum exceeds a configurable threshold are marked for exclusion. Adjacent marked pixels are combined into intervals, and an adjustable velocity padding extends the intervals to allow for line wings and small alignment errors. The detection threshold, padding, and resulting exclusion intervals can be adjusted in the interactive selector.
+When a theoretical stellar spectrum is supplied, PyMolFit normalises it using an estimated continuum and broadens it for stellar rotation and instrumental resolution. Its wavelengths are converted to the appropriate wavelength medium and reference frame using the supplied stellar radial velocity and the observation's frame correction. A small residual velocity offset can be refined by cross-correlation with the observed spectrum. Features whose fractional deviation from the template continuum exceeds a configurable threshold are marked for exclusion. Adjacent marked pixels are combined into intervals, and an adjustable velocity padding extends the intervals to allow for line wings and small alignment errors. The detection threshold and padding can be adjusted using the stellar-mask controls shown in Fig.~\ref{fig:Interactive_selector}, and the exclusions regenerated. The resulting intervals can also be edited manually.
 
 Only valid pixels inside the fitting intervals and outside the exclusion intervals contribute to parameter estimation. If no fitting intervals are specified, all valid, non-excluded pixels are used. Both types of interval can be saved together in an ECSV file with their wavelength units, wavelength medium, and reference frame. These selections affect parameter estimation, not the coverage of the correction: atmospheric transmission is also evaluated outside the fitting intervals and within excluded regions.
-
-\subsection{Wavelength, instrumental, and continuum modelling}
+w
+\subsection{Instrumental, wavelength, and continuum modelling}
+PyMolFit transforms the high-resolution atmospheric transmission into a model of the observed flux. A wavelength-correction model accounts for residual misalignment between the predicted telluric lines and the observation, while convolution with an instrumental line-spread function represents the broadening caused by the spectrograph. The broadened transmission is integrated onto the observed wavelength grid without resampling the observation itself. A smooth polynomial continuum, determined locally for each processing segment, then scales the dimensionless transmission to the observed flux level.
 
 \subsection{Parameter estimation}
 
