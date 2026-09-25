@@ -124,14 +124,11 @@ Ground-based astronomical spectra are affected by absorption in the Earth’s at
 
 \section{PyMolFit framework}
 
-\pymolfit reimplements the core telluric-correction approach used by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2} in Python, with assistance from AI coding tools during development. Atmospheric-profile construction, line-by-line absorption modelling, and fitting the resulting transmission to an observed spectrum follow established methods rather than introducing a new physical formalism. PyMolFit performs these calculations through its own numerical implementation without executing Molecfit or LBLRTM. Its contributions concern the implementation and user workflow: a unified Python interface, automated spectral segmentation and fit-region selection, and optional use of theoretical stellar spectra for identifying exclusion regions. The following sections describe how these capabilities are implemented and how the resulting telluric correction is validated.
-
-\subsection{Implementation and workflow}
-PyMolFit combines parameter fitting, calculation of atmospheric transmission over the full spectral range, and application of the telluric correction into a single Python function, \texttt{correct()}. This function accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays and returns the corrected spectrum together with the fitted transmission, model parameters, masks, and diagnostic information.
+\pymolfit implements the model-based telluric-correction approach used by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2} in Python, with assistance from AI coding tools during development. Parameter fitting, calculation of atmospheric transmission over the full spectral range, and application of the telluric correction are combined into a single function, \texttt{correct()}. This function accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays and returns the corrected spectrum together with the fitted transmission, model parameters, masks, and diagnostic information.
 
 PyMolFit automatically divides the spectrum into smaller processing segments while preserving spectral-order and detector-group boundaries. Fitting regions can be selected automatically or defined and edited through an interactive selector. When a theoretical stellar spectrum is supplied, PyMolFit uses it to identify stellar features and exclude the corresponding wavelength regions from telluric parameter estimation. These exclusions affect only the fit: atmospheric transmission is still calculated in the excluded regions when applying the correction.
 
-Whereas \Molecfit uses \LBLRTM for its radiative-transfer calculations \citep{MOLECFIT1}, PyMolFit evaluates the atmospheric absorption through its own numerical implementation. It therefore replaces the computational engine rather than providing a Python interface to the existing Molecfit executables. The underlying physical methods are established, but differences in their numerical implementation and in the optimisation procedure can produce different transmission spectra and fitted parameters. These differences are assessed in Sect.~\ref{sec:validation}.
+The atmospheric modelling follows established physical methods rather than introducing a new formalism. However, whereas \Molecfit uses \LBLRTM for its radiative-transfer calculations \citep{MOLECFIT1}, PyMolFit evaluates atmospheric absorption through its own numerical implementation, without executing either program. Differences in numerical implementation and optimisation can therefore produce different transmission spectra and fitted parameters. These differences are assessed in Sect.~\ref{sec:validation}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,15 +139,43 @@ Whereas \Molecfit uses \LBLRTM for its radiative-transfer calculations \citep{MO
 This section describes the atmospheric model, selection of fitting pixels, and numerical procedures used to estimate and apply the telluric correction.
 
 \subsection{Atmospheric profile and absorption calculation}
-PyMolFit follows the atmospheric-profile construction used by \Molecfit\ \citep{MOLECFIT1}, combining a MIPAS reference atmosphere \citep{MIPAS_PROFILE} with GDAS pressure, temperature, and water-vapour profiles \citep{GDAS}. Available time-specific GDAS profiles are interpolated to the observation time; otherwise, PyMolFit uses the same two-month average profiles as Molecfit. Local weather measurements adjust the lowest atmospheric layers when available. The resulting layered atmosphere specifies the pressure, temperature, and molecular composition with altitude. Molecular columns along the line of sight are calculated using the observation airmass, accounting for spherical geometry and atmospheric refraction.
 
-Molecular absorption is calculated on an internal spectral grid finer than the observed detector sampling. Transitions are obtained from the AER catalogue \citep{AER}, which provides their reference positions, intensities, and broadening parameters. The catalogue intensity \(S_j(T_{\mathrm{ref}})\) of transition \(j\) describes its absorption cross-section integrated over wavenumber at the reference temperature \(T_{\mathrm{ref}}=296\,\mathrm{K}\) \citep{HITRAN}. For each atmospheric layer, the intensity is adjusted to the local temperature, and the line position and profile are evaluated using the local pressure, temperature, and molecular composition. The profiles account for thermal and collisional broadening. Their contributions are multiplied by the corresponding molecular columns and summed to obtain the wavelength-dependent optical depth, a dimensionless measure of attenuation.
-
-Discrete-line absorption is supplemented by atmospheric continuum contributions, including water-vapour and carbon-dioxide absorption when these species are modelled \citep{MTCKD,LBLRTM}. These describe broad atmospheric absorption beyond the discrete-line contribution. All enabled contributions are combined into the total optical depth \(\tau_{\mathrm{atm}}(\lambda)\), from which the intrinsic atmospheric transmission is
+PyMolFit follows the atmospheric-profile construction used by \Molecfit\ \citep{MOLECFIT1}, combining a MIPAS reference atmosphere \citep{MIPAS_PROFILE} with GDAS pressure, temperature, and water-vapour profiles \citep{GDAS}. Conditions at the observation time are estimated from a time-weighted average of the GDAS profiles before and after the observation. When these are unavailable, PyMolFit uses the same two-month average profiles as Molecfit. Available local weather measurements adjust the lowest atmospheric layers. The merged profile gives the molecular number density at altitude \(h\),
 \begin{equation}
-    T_{\mathrm{atm}}(\lambda) = \exp[-\tau_{\mathrm{atm}}(\lambda)].
+    n_s(h) = x_s(h)\,\frac{P(h)}{k_{\mathrm B}T(h)},
 \end{equation}
-This Beer--Lambert relation gives the fraction of incident light transmitted through the atmosphere \citep{RYBICKI1979}. Instrumental broadening and the comparison with the observed flux are treated in the subsequent modelling stages.
+where \(x_s(h)\) is the number fraction of species \(s\) relative to the total gas. The column density through layer \(i\) is
+\begin{equation}
+    N_{s,i}
+    = \int_{\mathcal{L}_i} n_s[h(\ell)]\,\mathrm{d}\ell,
+\end{equation}
+where \(\mathcal{L}_i\) is the light path within the layer and \(\ell\) measures distance along it. The path is calculated from the observation airmass, accounting for spherical geometry and atmospheric refraction.
+
+Absorption is evaluated on an internal spectral grid finer than the detector sampling. The AER catalogue \citep{AER} supplies line positions, integrated strengths \(S_j(T_{\mathrm{ref}})\), and broadening parameters at \(T_{\mathrm{ref}}=296\,\mathrm{K}\) \citep{HITRAN}. For transition \(j\) in layer \(i\), the cross-section at wavenumber \(\tilde{\nu}=1/\lambda\) is
+\begin{equation}
+    \sigma_{j,i}(\tilde{\nu})
+    = S_j(T_i)\,\phi_{j,i}(\tilde{\nu}).
+\end{equation}
+The strength is adjusted to the layer temperature, while the line position and Voigt-based profile depend on the local pressure, temperature, and composition, including Doppler and collisional broadening. The effective profile \(\phi_{j,i}\) includes the numerical line-wing treatment and need not retain the unit-area normalisation of the underlying full Voigt function. Summing over layers and transitions gives
+\begin{equation}
+    \tau_{\mathrm{lines}}(\tilde{\nu})
+    = \sum_i \sum_s N_{s,i}
+      \sum_{j\in s}\sigma_{j,i}(\tilde{\nu}),
+\end{equation}
+where \(j\in s\) denotes transitions of species \(s\).
+
+Atmospheric continuum contributions, including water-vapour and carbon-dioxide absorption when enabled, supplement the explicit line contribution \citep{MTCKD,LBLRTM}. Their combined optical depth, \(\tau_{\mathrm{cont}}\), gives
+\begin{equation}
+    \tau_{\mathrm{atm}}(\tilde{\nu})
+    = \tau_{\mathrm{lines}}(\tilde{\nu})
+      + \tau_{\mathrm{cont}}(\tilde{\nu}).
+\end{equation}
+The intrinsic atmospheric transmission is then
+\begin{equation}
+    T_{\mathrm{atm}}(\tilde{\nu})
+    = \exp[-\tau_{\mathrm{atm}}(\tilde{\nu})]
+\end{equation}
+\citep{RYBICKI1979}. Instrumental broadening and comparison with the observed flux are treated in the subsequent modelling stages.
 
 \subsection{Spectral segmentation and fit-region selection}
 \begin{figure*}[t]
