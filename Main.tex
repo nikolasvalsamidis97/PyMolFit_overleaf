@@ -130,33 +130,23 @@ PyMolFit automatically divides the spectrum into smaller processing segments whi
 
 The atmospheric modelling follows established physical methods rather than introducing a new formalism. However, whereas \Molecfit uses \LBLRTM for its radiative-transfer calculations \citep{MOLECFIT1}, PyMolFit evaluates atmospheric absorption through its own numerical implementation, without executing either program. Differences in numerical implementation and optimisation can therefore produce different transmission spectra and fitted parameters. These differences are assessed in Sect.~\ref{sec:validation}.
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3 Methodology
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Methodology}
-
 \subsection{Atmospheric profile and absorption calculation}
 
 PyMolFit follows the atmospheric-profile construction used by \Molecfit\ \citep{MOLECFIT1}, combining a MIPAS reference atmosphere \citep{MIPAS_PROFILE} with GDAS pressure, temperature, and water-vapour profiles \citep{GDAS}. Conditions at the observation time are estimated from a time-weighted average of the bracketing GDAS profiles. When these are unavailable, PyMolFit uses the same two-month average profiles as Molecfit. Available local weather measurements adjust the lowest layers. The molecular number density at altitude \(h\) is
-\begin{equation}
-    n_s(h) = x_s(h)\,\frac{P(h)}{k_{\mathrm B}T(h)},
-\end{equation}
+\begin{equation} n_s(h) = x_s(h)\,\frac{P(h)}{k_{\mathrm B}T(h)}, \end{equation}
 where \(x_s\) is the number fraction of species \(s\), \(P\) and \(T\) are pressure and temperature, and \(k_{\mathrm B}\) is Boltzmann's constant. The line-of-sight column density through layer \(i\) is
-\begin{equation}
-    N_{s,i} = \int_{\mathcal{L}_i} n_s[h(\ell)]\,\mathrm{d}\ell,
-\end{equation}
+\begin{equation} N_{s,i} = \int_{\mathcal{L}_i} n_s[h(\ell)]\,\mathrm{d}\ell, \end{equation}
 where \(\mathcal{L}_i\) is the light path within the layer and \(\ell\) measures distance along it. The path is calculated from the observation airmass, supplied explicitly or read from metadata, accounting for spherical geometry and atmospheric refraction.
 
 Absorption is evaluated on a grid finer than the detector sampling. The AER catalogue \citep{AER} supplies line positions, integrated strengths \(S_j(T_{\mathrm{ref}})\), and broadening parameters at \(T_{\mathrm{ref}}=296\,\mathrm{K}\) \citep{HITRAN}. For transition \(j\) in layer \(i\), the cross-section at wavenumber \(\tilde{\nu}=1/\lambda\), where \(\lambda\) is wavelength, is
-\begin{equation}
-    \sigma_{j,i}(\tilde{\nu}) = S_j(T_i)\,\phi_{j,i}(\tilde{\nu}).
-\end{equation}
-Here, \(S_j(T_i)\) is the strength adjusted to the layer temperature \(T_i\), and \(\phi_{j,i}\) is the effective Voigt-based profile. Local pressure, temperature, and composition determine the line position and Doppler and collisional broadening. The default treatment, \texttt{lblrtm\_panel}, implements LBLRTM-style accumulation on nested grids, with line-dependent profile limits and a separate far-wing contribution extending to \(25\,\mathrm{cm}^{-1}\) from line centre. These effective profiles need not retain unit-area normalisation. The discrete-line optical depth is
-\begin{equation}
-    \tau_{\mathrm{lines}}(\tilde{\nu}) = \sum_i\sum_s N_{s,i}\sum_{j\in s}\sigma_{j,i}(\tilde{\nu}),
-\end{equation}
+\begin{equation} \sigma_{j,i}(\tilde{\nu}) = S_j(T_i)\,\phi_{j,i}(\tilde{\nu}). \end{equation}
+Here, \(S_j(T_i)\) is the strength adjusted to the layer temperature \(T_i\), and \(\phi_{j,i}\) is the effective Voigt-based profile. Local pressure, temperature, and composition determine the line position and Doppler and collisional broadening. The discrete-line optical depth is
+\begin{equation} \tau_{\mathrm{lines}}(\tilde{\nu}) = \sum_i\sum_s N_{s,i}\sum_{j\in s}\sigma_{j,i}(\tilde{\nu}), \end{equation}
 where \(j\in s\) denotes transitions of species \(s\). Enabled atmospheric continuum contributions, including water-vapour and carbon-dioxide absorption, give an additional optical depth \(\tau_{\mathrm{cont}}\) \citep{MTCKD,LBLRTM}. The total optical depth and Beer--Lambert transmission are \citep{RYBICKI1979}
 \begin{equation}
     \begin{aligned}
@@ -164,57 +154,63 @@ where \(j\in s\) denotes transitions of species \(s\). Enabled atmospheric conti
         T_{\mathrm{atm}}(\tilde{\nu}) &= \exp[-\tau_{\mathrm{atm}}(\tilde{\nu})].
     \end{aligned}
 \end{equation}
+Here, \(T_{\mathrm{atm}}\) is the intrinsic atmospheric transmission, before detector sampling and instrumental broadening.
 
 \subsection{Spectral segmentation and fit-region selection}
 \begin{figure*}[t]
     \centering
     \includegraphics[width=\textwidth]{Images/Interactive_selector.png}
-    \caption{PyMolFit's interactive region selector around the AU Mic Na\,I D doublet. Green and orange shading mark fitting and stellar exclusion intervals; exclusions take precedence where they overlap. The controls allow manual editing and adjustment of line-selection and stellar-template settings. Blue ticks mark H$_2$O transitions from the AER catalogue.}
+    \caption{PyMolFit's optional interactive region editor around the AU Mic Na\,I D doublet. Green and orange shading mark fitting and stellar exclusion intervals; exclusions take precedence where they overlap. Automatically generated regions can be inspected and edited using the line-selection and stellar-template controls. Blue ticks mark H$_2$O transitions from the AER catalogue.}
     \label{fig:Interactive_selector}
 \end{figure*}
+
 PyMolFit divides the spectrum into processing segments while preserving spectral-order and detector-group boundaries, identified from metadata or inferred from large wavelength gaps. The default target width is 50\,\AA, with further subdivision if the atmospheric grid exceeds two million points per segment. These configurable limits control memory use without coarsening the model grid.
 
-Fitting and exclusion intervals can be supplied directly or edited in the interactive selector (Fig.~\ref{fig:Interactive_selector}). They select the observed pixels used to constrain molecular columns, wavelength corrections, continuum parameters, and instrumental broadening. Automatic fitting-region selection ranks AER transitions within the observed coverage by
+Fitting regions focus parameter estimation on telluric absorption, while exclusion regions remove stellar features or defective pixels that could bias the fit. Only valid pixels within fitting regions and outside exclusions contribute to the comparison between the observed spectrum and the model.
+
+The function \texttt{select\_telluric\_regions()} automatically generates fitting windows around a requested number of AER transitions. Transitions are ranked by
 \begin{equation}
     A_j = S_j(T_{\mathrm{ref}})\,N_{s(j),\mathrm{rep}},
 \end{equation}
-where \(s(j)\) identifies the species of transition \(j\), and \(N_{s(j),\mathrm{rep}}\) is its column density in a fixed reference atmosphere. Intervals of configurable half-width in detector pixels are placed around the requested number of highest-scoring lines and merged where they overlap.
+where \(S_j(T_{\mathrm{ref}})\) is the reference strength of transition \(j\), and \(N_{s(j),\mathrm{rep}}\) is the column density of its species \(s(j)\) in a fixed reference atmosphere. The highest-scoring lines within the observed coverage are selected. Each window extends a configurable number of detector pixels on either side of its line centre; the defaults are 100 lines and a half-width of 12 pixels. Lines in wavelength gaps are skipped, and overlapping windows are merged.
 
-Exclusions remove stellar features or defective pixels from the fit. For automatic stellar exclusions, PyMolFit continuum-normalises a theoretical spectrum and applies rotational broadening. Instrumental broadening uses a supplied or metadata-derived resolving power when available, not the subsequently fitted instrumental profile. The template is converted to the observation's wavelength medium and reference frame using the stellar radial velocity and observation frame correction, with optional residual alignment by cross-correlation. Template pixels exceeding a configurable fractional deviation from the continuum are grouped into exclusions and extended by velocity padding. These exclusions remain fixed during fitting unless regenerated.
+Enabling the interactive editor displays the generated intervals for inspection and manual adjustment (Fig.~\ref{fig:Interactive_selector}). Fitting and exclusion intervals can then be saved together in an ECSV file and supplied to the correction.
 
-Only valid pixels inside fitting intervals and outside exclusions contribute to parameter estimation. If no fitting intervals are specified, all valid, non-excluded pixels are used.
+When no fitting regions are supplied to \texttt{correct()}, it selects them automatically using the same ranking score, but distributes the selected lines across wavelength and molecular species and adapts window widths to the estimated instrumental broadening.
+
+Stellar exclusions can be generated from a theoretical stellar spectrum. PyMolFit continuum-normalises the template and broadens it for stellar rotation and, when a resolving power is supplied or available in the metadata, instrumental resolution. The template is converted to the observation's wavelength medium and reference frame using the stellar radial velocity and observation frame correction. Features exceeding a specified fractional deviation from the template continuum define exclusion intervals. These intervals are widened by a configurable velocity margin to include line wings and allow small alignment errors.
 
 \subsection{Spectral modelling and parameter estimation}
-PyMolFit fits a model of the observed flux to these selected pixels. Molecular column-density scales initially equal unity relative to the atmospheric profile. Initial wavelength alignment follows the input calibration and metadata-based frame correction. The initial Gaussian instrumental width is estimated from resolving-power metadata and detector sampling, or from narrow observed features when this information is unavailable. User-supplied starting values can replace these estimates.
+With the fitting and exclusion regions defined, PyMolFit performs preliminary fits to the selected observed pixels to choose the wavelength-correction and instrumental-broadening models. For each spectral order or detector group, it compares the original wavelength calibration with constant, linear, and, where supported, quadratic corrections. Instrumental broadening initially uses a Gaussian profile; preliminary fits assess whether adding Lorentzian wings or wavelength-dependent widths improves the model sufficiently to justify the additional parameters. Boxcar broadening can be enabled explicitly.
 
-For each trial, the high-resolution atmospheric transmission receives a constant or polynomial wavelength correction. In the default implementation, transmission is averaged over each observed pixel's wavelength interval, accounting for partial overlap at pixel boundaries, then convolved with the normalised instrumental line-spread function. Only the model is resampled; the observation remains unchanged. The resulting \(\widehat T_{kp}\) includes wavelength correction, detector sampling, and instrumental broadening at pixel \(p\) in segment \(k\). The instrumental profile supports Gaussian, Lorentzian, and boxcar components, with optional wavelength-dependent widths.
+The main fit uses these selected model forms. Molecular scaling factors multiply the atmospheric-profile columns to calculate the intrinsic transmission \(T_{\mathrm{atm}}\) defined above; unity leaves the columns unchanged. After applying the wavelength correction, the transmission is averaged over each observed pixel's wavelength interval, accounting for partial overlaps at pixel boundaries, and convolved with the normalised instrumental line-spread function. The resulting transmission at pixel \(p\) in segment \(k\) is denoted by \(\widehat T_{kp}\). Only the model is resampled; the observation remains unchanged.
 
-A local polynomial continuum represents the smooth flux level, distinct from the atmospheric continuum absorption included in \(\tau_{\mathrm{cont}}\). The predicted flux is
+A local polynomial continuum scales this transmission to the observed flux level:
 \begin{equation}
-    C_{kp} = \sum_{m=0}^{d}c_{km}u_{kp}^{m}, \qquad F^{\mathrm{mod}}_{kp} = C_{kp}\,\widehat T_{kp},
+    C_{kp} = \sum_{m=0}^{d} c_{km}u_{kp}^{m},
+    \qquad
+    F^{\mathrm{mod}}_{kp} = C_{kp}\,\widehat T_{kp}.
 \end{equation}
-where \(c_{km}\) is the coefficient of term \(m\) in segment \(k\), \(d\) is the continuum polynomial order, and \(u_{kp}\) maps wavelength linearly from \(-1\) to \(+1\) across the segment. The default \(d=1\) gives a linear continuum. The default fit minimises
+Here, \(c_{km}\) is the coefficient of polynomial term \(m\) in segment \(k\), \(d\) is the continuum order, and \(u_{kp}\) maps wavelength linearly from \(-1\) to \(+1\) across the segment. This flux continuum is distinct from the atmospheric continuum absorption in \(\tau_{\mathrm{cont}}\). Automatic selection starts with \(d=2\) and compares orders 1--4 using temporarily withheld wavelength blocks, retaining the quadratic unless validation favours a simpler or better-predicting alternative.
+
+Agreement between the modelled and observed flux inside the fitting regions is measured using uncertainty-normalised residuals. The default fit minimises the soft-\(L_1\) objective implemented in SciPy's \texttt{least\_squares} routine \citep{SCIPY}\footnote{\url{https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html}}:
 \begin{equation}
-    \chi^2 = \sum_k\sum_{p\in\mathcal F_k}\left[\frac{F^{\mathrm{obs}}_{kp}-F^{\mathrm{mod}}_{kp}}{\sigma_{F,kp}}\right]^2,
+    \begin{aligned}
+        r_{kp}
+        &= \frac{F^{\mathrm{obs}}_{kp}-F^{\mathrm{mod}}_{kp}}
+                 {\sigma_{F,kp}}, \\
+        \mathcal{J}
+        &= a^2 \sum_k \sum_{p\in\mathcal F_k}
+        \left[\sqrt{1+\left(r_{kp}/a\right)^2}-1\right].
+    \end{aligned}
 \end{equation}
-where \(F^{\mathrm{obs}}_{kp}\) and \(\sigma_{F,kp}\) are the observed flux and its uncertainty, and \(\mathcal F_k\) contains the selected fitting pixels in segment \(k\). Without supplied uncertainties, fitting uses a constant error of one percent of the mean observed flux in each segment's fitted pixels. Robust loss functions are optional.
+Here, \(F^{\mathrm{obs}}_{kp}\) is the observed flux, \(\sigma_{F,kp}\) its uncertainty, and \(\mathcal F_k\) contains the valid pixels inside fitting regions after exclusions. The dimensionless scale \(a\) controls the reduced influence of large residuals. It starts at unity and can be adjusted automatically between 1 and 2 using the residual scatter. Ordinary weighted least squares is also available.
 
-Bounded trust-region reflective least squares adjusts the molecular scales and enabled wavelength and instrumental parameters, recalculating the model at each trial. Molecular scales are fitted logarithmically and shared across segments; atmospheric pressure and temperature profiles remain fixed. Wavelength corrections defined per order or detector group are shared across its segments. Continuum coefficients are independent between segments and normally solved by linear least squares at each trial.
+PyMolFit uses the flux uncertainties supplied with the spectrum. If these are unavailable, it estimates the local noise from fluctuations between neighbouring pixels, reducing the influence of smooth continuum slopes and isolated outliers. Pixels outside the telluric fitting windows are preferred to avoid interpreting absorption features as noise. If no reliable estimate can be obtained, an uncertainty of 1\% of the local flux level is assumed.
 
-Convergence requires sufficiently small relative objective improvement, parameter steps, or scaled gradient, with default tolerances \texttt{ftol} = \texttt{xtol} = \texttt{gtol} = \(10^{-10}\). A model-evaluation limit can also terminate fitting without convergence.
+A bounded trust-region reflective optimiser repeatedly updates the molecular scales and enabled wavelength and broadening parameters, recalculates the model, and evaluates its agreement with the observation. Molecular scales are fitted logarithmically and shared across segments, while atmospheric pressure and temperature profiles remain fixed. Wavelength corrections are shared within each physical order or detector group. At each trial, continuum coefficients are determined independently for each segment using iteratively reweighted linear least squares for robust fitting, or weighted linear least squares for ordinary fitting.
 
-\subsection{Corrected spectrum and uncertainty propagation}
-The best-fitting transmission is evaluated over the full input coverage, including excluded regions and wavelengths outside the fitting intervals. The corrected flux is
-\begin{equation}
-    F^{\mathrm{corr}}_{kp} = \frac{F^{\mathrm{obs}}_{kp}}{\widehat T_{kp}}.
-\end{equation}
-The continuum is not divided out. Invalid pixels and pixels with transmission below a configurable threshold, 0.01 by default, are masked.
-
-Optional transmission uncertainties \(\sigma_{T,kp}\) are obtained by propagating the local fitted-parameter covariance through the transmission model using numerical derivatives. The covariance is scaled by the reduced chi-square; rank-deficient estimates are flagged as unavailable. Neglecting covariance between the observed flux and fitted transmission, the corrected-flux variance is
-\begin{equation}
-    \sigma^2_{F^{\mathrm{corr}},kp} \simeq \frac{\sigma_{F,kp}^{2}}{\widehat T_{kp}^{2}} + \frac{\left(F^{\mathrm{obs}}_{kp}\right)^2}{\widehat T_{kp}^{4}}\,\sigma_{T,kp}^{2}.
-\end{equation}
-Only supplied flux uncertainties are propagated by default. Optional transmission-uncertainty propagation is limited to segments participating in the fit. These statistical estimates exclude systematic errors in the atmospheric profiles, spectroscopic data, and model assumptions.
+Iteration stops when the relative objective improvement, parameter step, or scaled gradient meets its convergence criterion. The default tolerances are \texttt{ftol} = \texttt{xtol} = \texttt{gtol} = \(10^{-10}\). Reaching the model-evaluation limit also stops the fit but does not establish convergence.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 5 Validation
