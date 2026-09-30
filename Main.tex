@@ -223,7 +223,33 @@ where \(\widehat T_{kp}\) now denotes the final fitted transmission. This step a
 
 \section{Validation}\label{sec:validation}
 
+We assess PyMolFit against \Molecfit, an established telluric-correction package with published performance evaluations \citep{MOLECFIT1,MOLECFIT2}. Both programs independently correct the same HARPS observation of $\beta$~Pictoris, obtained on 6 April 2017 and covering approximately 378--691\,nm. They use the same input spectrum, uncertainties, GDAS profile, AER catalogue, and fitting and exclusion regions. Both fit H$_2$O and O$_2$ columns, with weak CO absorption included at its reference abundance.
 
+\subsection{Selected stellar absorption regions}
+
+Figure~\ref{fig:validation_regions} shows six regions extracted from the full-spectrum corrections without additional fitting or rescaling. Both methods substantially reduce telluric absorption around Na\,I, Fe\,II, and H$\alpha$, producing closely overlapping corrected spectra. The comparatively telluric-free Ca\,II and Mg\,II regions show that the stellar profiles remain essentially unchanged.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{Images/regions_mosaic.png}
+    \caption{Selected regions of the $\beta$~Pictoris spectrum before correction (green) and after correction with PyMolFit (blue) and Molecfit (dashed orange). All curves share the same flux scaling. Wavelengths are observatory-frame vacuum values; the Fe\,II panel titles use conventional rest-frame air wavelengths.}
+    \label{fig:validation_regions}
+\end{figure*}
+
+\subsection{Full-spectrum comparison}
+
+We compare both corrected spectra with one shared theoretical stellar reference, $F^{\mathrm{ref}}$. The BT-NextGen template ($T_{\mathrm{eff}}=8000$\,K, $\log g=4$, solar metallicity) is adjusted for velocity, rotational and instrumental broadening, and a smooth flux calibration using weakly telluric-affected pixels. It is not fitted separately to each correction.
+
+Figure~\ref{fig:validation_deviation} compares the absolute deviations from this reference in 1\,nm bins. Both methods use identical comparison pixels, excluding invalid samples, transmission values at or below 0.01, and predefined narrow Na and Ca cores not represented by the photospheric template.
+
+The pixel-averaged relative absolute deviations are 1.277\% for PyMolFit and 1.278\% for Molecfit. Restricting the comparison to telluric-affected pixels, where either fitted transmission is below 0.995, gives 0.628\% and 0.639\%, respectively. The methods therefore give similar reference agreement for this observation. These deviations also contain stellar-template mismatch and observational noise; they do not establish absolute correction accuracy or general superiority of either method.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{Images/mean_absolute_deviation.png}
+    \caption{Full-spectrum comparison with the shared stellar reference. Upper panel: mean relative absolute deviation, $\langle 100|F^{\mathrm{corr}}-F^{\mathrm{ref}}|/F^{\mathrm{ref}}\rangle$, for each correction. Lower panel: $\langle |F^{\mathrm{corr}}_{\mathrm{Py}}-F^{\mathrm{ref}}|-|F^{\mathrm{corr}}_{\mathrm{MF}}-F^{\mathrm{ref}}|\rangle$, in common scaled flux units. Negative values indicate closer agreement for PyMolFit; positive values indicate closer agreement for Molecfit. Brackets denote averages over the same usable pixels in each 1\,nm bin. The gap near 531--534\,nm reflects missing input data.}
+    \label{fig:validation_deviation}
+\end{figure*}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 6 Discussion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
