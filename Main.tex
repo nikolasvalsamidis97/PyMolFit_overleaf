@@ -30,21 +30,30 @@
 
 \usepackage[hidelinks]{hyperref}
 
+\usepackage{booktabs}
+\usepackage{tabularx}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LINKS
 
-\newcommand{\Molecfit}{\href{https://www.eso.org/sci/software/pipelines/skytools/molecfit}{Molecfit }}
+%\newcommand{\Molecfit}{\href{https://www.eso.org/sci/software/pipelines/skytools/molecfit}{\texttt{Molecfit}}}
+%\newcommand{\molecfit}{\href{https://www.eso.org/sci/software/pipelines/skytools/molecfit}{\texttt{molecfit}}}
 
-\newcommand{\LBLRTM}{\href{https://github.com/AER-RC/LBLRTM}{LBLRTM }}
+\newcommand{\Molecfit}{{\texttt{Molecfit}}}
+\newcommand{\molecfit}{{\texttt{molecfit}}}
 
-\newcommand{\GDAS}{\href{https://psl.noaa.gov}{GDAS }}
 
-\newcommand{\HITRAN}{\href{https://hitran.org}{HITRAN }}
+\newcommand{\LBLRTM}{\href{https://github.com/AER-RC/LBLRTM}{LBLRTM}}
 
-\newcommand{\MIPAS}{\href{https://earth.esa.int/eogateway/instruments/mipas}{MIPAS }}
+\newcommand{\GDAS}{\href{https://psl.noaa.gov}{GDAS}}
 
-\newcommand{\pymolfit}{PyMolFit }
+\newcommand{\HITRAN}{\href{https://hitran.org}{HITRAN}}
+
+\newcommand{\MIPAS}{\href{https://earth.esa.int/eogateway/instruments/mipas}{MIPAS}}
+
+\newcommand{\Pymolfit}{\texttt{Pymolfit}}
+\newcommand{\pymolfit}{\texttt{pymolfit}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -88,14 +97,14 @@
  
   \abstract
   % context heading (optional)
-  % {} leave it empty if necessary  
-   {}
+  % leave it empty if necessary  
+   {Astronomical spectra observed from ground-based instruments suffer from telluric absorption lines that can interfere with astrophysical interpretation. To remove the telluric features, synthetic modelling of Earth's atmosphere is an increasingly popular and efficient alternative to dedicated observations of telluric standard stars. A widely used and performant tool to model telluric features is \texttt{molecfit}, currently maintained at the European Southern Observatory (ESO) and used in many of their reduction pipelines.}
   % aims heading (mandatory)
-   {} 
+   {To make the approach of \texttt{molecfit} more accessible for workflows outside of the ESO software infrastructure, we present \pymolfit, a pure python implementation of model-based telluric correction.} 
   % methods heading (mandatory)
-   {}
+   {Like \molecfit, \pymolfit\ constructs atmospheric transmission spectra from atmospheric profiles and molecular line data but using an independent numerical implementation. Selected spectral regions constrain molecular columns, wavelength alignment, instrumental broadening, and the local continuum. Automatic region selection and optional stellar-feature exclusions support this workflow. We validate \pymolfit\ by comparing corrections using matched inputs for a HARPS observation of $\beta$~Pictoris and all 15 detector-order segments of a CRIRES+ extraction.}
   % results heading (mandatory)
-   {}
+   {The HARPS corrections closely overlap around the examined stellar features. Across the full spectrum, mean relative absolute deviations from a shared stellar reference are 1.3\% for \pymolfit\ and 1.3\% for \molecfit. For CRIRES+, deviations from a shared smooth continuum are 2.2\% and 2.8\%, respectively, with wavelength-dependent differences between the corrections. The infrared statistic measures consistency with a continuum reference derived using both fitted transmissions, rather than independent correction accuracy. These comparisons demonstrate closely comparable optical corrections and identify differences across the infrared coverage, while broader performance remains to be assessed.}
   % conclusions heading (optional), leave it empty if necessary
    {}
 
@@ -110,25 +119,27 @@
 
 \section{Introduction}
 
-Ground-based astronomical spectra are affected by absorption in the Earth’s atmosphere. These telluric absorption features contaminate the observed spectrum and can interfere with the detection and analysis of astrophysical spectral lines, particularly when stellar and atmospheric features overlap in wavelength. Accurate modelling and correction of telluric absorption is therefore an essential step in the reduction and interpretation of many spectroscopic observations.
+Ground-based astronomical spectra are affected by absorption in the Earth's atmosphere. These telluric absorption features contaminate the observed spectrum and can interfere with the detection and analysis of astrophysical spectral lines, particularly when stellar and atmospheric features overlap in wavelength. Accurate modelling and correction of telluric absorption is therefore an essential step in the reduction and interpretation of many spectroscopic observations.
 
-[Why empirical telluric correction / standard stars can be problematic]
+Telluric transmission can be estimated from observations of standard stars obtained close in time and airmass to the science target. This approach requires additional observing time and must account for intrinsic features in the standard-star spectrum and differences in atmospheric conditions. Alternatively, synthetic atmospheric transmission can be fitted directly to suitable science spectra, reducing the need for separate calibration observations \citep{MOLECFIT1}.
 
-[Model-based telluric correction and the role of Molecfit]
+\Molecfit\ implements this model-based approach by combining atmospheric profiles, molecular spectroscopic data, and radiative-transfer calculations with models of the instrumental response and observed continuum \citep{MOLECFIT1}. Its performance has been evaluated on astronomical observations \citep{MOLECFIT2}, making it an established method for telluric correction.
 
-
+Here we introduce \pymolfit, an independent Python implementation of the established physical approach underlying \molecfit. Its purpose is to bring spectral preparation, atmospheric fitting, and correction into a unified workflow that integrates with Python-based analysis. Automated region selection and optional interactive editing support this process without introducing a new physical formalism. Because an independent numerical implementation need not reproduce identical fitted transmissions, we assess \pymolfit\ against \molecfit\ using matched inputs for optical HARPS and infrared CRIRES+ spectra.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2 PyMolFit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{PyMolFit framework}
+\section{\Pymolfit\ framework}
 
-\pymolfit implements the model-based telluric-correction approach used by \Molecfit\ \citep{MOLECFIT1,MOLECFIT2} in Python, with assistance from AI coding tools during development. Parameter fitting, calculation of atmospheric transmission over the full spectral range, and application of the telluric correction are combined into a single function, \texttt{correct()}. This function accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays and returns the corrected spectrum together with the fitted transmission, model parameters, masks, and diagnostic information.
+The project began with the aim of simplifying the installation and use of \molecfit\ by packaging it within a Python environment while preserving its calculations and behaviour. During development, we found that integrating the existing software and its dependencies was less practical than implementing the correction workflow directly in Python. We therefore developed \pymolfit\ as an independent implementation using Codex AI coding tools, rather than as a Python interface to the existing executables.
 
-PyMolFit automatically divides the spectrum into smaller processing segments while preserving spectral-order and detector-group boundaries. Fitting regions can be selected automatically or defined and edited through an interactive selector. When a theoretical stellar spectrum is supplied, PyMolFit uses it to identify stellar features and exclude the corresponding wavelength regions from telluric parameter estimation. These exclusions affect only the fit: atmospheric transmission is still calculated in the excluded regions when applying the correction.
+The resulting framework provides its own interface and automated processing features, with installation through the Python package environment. Parameter fitting, calculation of atmospheric transmission over the full spectral range, and application of the telluric correction are combined in a single function, \texttt{correct()}. This function accepts spectrum files, loaded spectrum objects, or wavelength--flux arrays and returns the corrected spectrum together with the fitted transmission, model parameters, masks, and diagnostic information.
 
-The atmospheric modelling follows established physical methods rather than introducing a new formalism. However, whereas \Molecfit uses \LBLRTM for its radiative-transfer calculations \citep{MOLECFIT1}, PyMolFit evaluates atmospheric absorption through its own numerical implementation, without executing either program. Differences in numerical implementation and optimisation can therefore produce different transmission spectra and fitted parameters. These differences are assessed in Sect.~\ref{sec:validation}.
+\Pymolfit\ automatically divides the spectrum into processing segments while preserving spectral-order and detector-group boundaries. Fitting regions can be selected automatically or inspected and edited interactively. When a theoretical stellar spectrum is supplied, it can be used to identify stellar features and exclude them from telluric parameter estimation. These exclusions affect only the fit; atmospheric transmission is still calculated in the excluded regions when applying the correction.
+
+The core approach remains that of \molecfit: constructing an atmospheric model, fitting its predicted transmission to the observation, and using the fitted transmission to remove telluric absorption \citep{MOLECFIT1,MOLECFIT2}. The physical methods are established, but \pymolfit\ performs its own numerical calculations without executing \Molecfit\ or \LBLRTM. Differences in data handling, numerical implementation, and optimisation can therefore produce different transmission spectra and fitted parameters. These implementation differences are summarised in Tables~\ref{tab:physical_implementation} and~\ref{tab:fitting_implementation}, and the resulting corrections are compared in Sect.~\ref{sec:validation}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3 Methodology
@@ -137,13 +148,13 @@ The atmospheric modelling follows established physical methods rather than intro
 \section{Methodology}
 \subsection{Atmospheric profile and absorption calculation}
 
-PyMolFit follows the atmospheric-profile construction used by \Molecfit\ \citep{MOLECFIT1}, combining a MIPAS reference atmosphere \citep{MIPAS_PROFILE} with GDAS pressure, temperature, and water-vapour profiles \citep{GDAS}. Conditions at the observation time are estimated from a time-weighted average of the bracketing GDAS profiles. When these are unavailable, PyMolFit uses the same two-month average profiles as Molecfit. Available local weather measurements adjust the lowest layers. The molecular number density at altitude \(h\) is
+\Pymolfit\ follows the atmospheric-profile construction used by \molecfit\ \citep{MOLECFIT1}, combining a MIPAS reference atmosphere \citep{MIPAS_PROFILE} with GDAS pressure, temperature, and water-vapour profiles \citep{GDAS}. Conditions at the observation time are estimated from a time-weighted average of the bracketing GDAS profiles. When these are unavailable, \pymolfit\ uses the same two-month average profiles as \molecfit. Available local weather measurements adjust the lowest layers. The molecular number density at altitude \(h\) is
 \begin{equation} n_s(h) = x_s(h)\,\frac{P(h)}{k_{\mathrm B}T(h)}, \end{equation}
 where \(x_s\) is the number fraction of species \(s\), \(P\) and \(T\) are pressure and temperature, and \(k_{\mathrm B}\) is Boltzmann's constant. The line-of-sight column density through layer \(i\) is
 \begin{equation} N_{s,i} = \int_{\mathcal{L}_i} n_s[h(\ell)]\,\mathrm{d}\ell, \end{equation}
 where \(\mathcal{L}_i\) is the light path within the layer and \(\ell\) measures distance along it. The path is calculated from the observation airmass, supplied explicitly or read from metadata, accounting for spherical geometry and atmospheric refraction.
 
-Absorption is evaluated on a grid finer than the detector sampling. The AER catalogue \citep{AER} supplies line positions, integrated strengths \(S_j(T_{\mathrm{ref}})\), and broadening parameters at \(T_{\mathrm{ref}}=296\,\mathrm{K}\) \citep{HITRAN}. For transition \(j\) in layer \(i\), the cross-section at wavenumber \(\tilde{\nu}=1/\lambda\), where \(\lambda\) is wavelength, is
+Absorption is evaluated on a grid finer than the detector sampling. The AER catalogue \citep{AER} supplies line positions, integrated strengths \(S_j(T_{\mathrm{ref}})\), and broadening parameters at \(T_{\mathrm{ref}}=296\,\mathrm{K}\) \citep{HITRAN}. Defining the wavenumber \(\tilde{\nu}=1/\lambda\), where \(\lambda\) is wavelength, the cross section for transition \(j\) in layer \(i\) is
 \begin{equation} \sigma_{j,i}(\tilde{\nu}) = S_j(T_i)\,\phi_{j,i}(\tilde{\nu}). \end{equation}
 Here, \(S_j(T_i)\) is the strength adjusted to the layer temperature \(T_i\), and \(\phi_{j,i}\) is the effective Voigt-based profile. Local pressure, temperature, and composition determine the line position and Doppler and collisional broadening. The discrete-line optical depth is
 \begin{equation} \tau_{\mathrm{lines}}(\tilde{\nu}) = \sum_i\sum_s N_{s,i}\sum_{j\in s}\sigma_{j,i}(\tilde{\nu}), \end{equation}
@@ -160,11 +171,11 @@ Here, \(T_{\mathrm{atm}}\) is the intrinsic atmospheric transmission, before det
 \begin{figure*}[t]
     \centering
     \includegraphics[width=\textwidth]{Images/Interactive_selector.png}
-    \caption{PyMolFit's optional interactive region editor around the AU Mic Na\,I D doublet. Green and orange shading mark fitting and stellar exclusion intervals; exclusions take precedence where they overlap. Automatically generated regions can be inspected and edited using the line-selection and stellar-template controls. Blue ticks mark H$_2$O transitions from the AER catalogue.}
+    \caption{\Pymolfit's optional interactive region editor around the AU Mic Na\,I D doublet. Green and orange shading mark fitting and stellar exclusion intervals; exclusions take precedence where they overlap. Automatically generated regions can be inspected and edited using the line-selection and stellar-template controls. Blue ticks mark H$_2$O transitions from the AER catalogue.}
     \label{fig:Interactive_selector}
 \end{figure*}
 
-PyMolFit divides the spectrum into processing segments while preserving spectral-order and detector-group boundaries, identified from metadata or inferred from large wavelength gaps. The default target width is 50\,\AA, with further subdivision if the atmospheric grid exceeds two million points per segment. These configurable limits control memory use without coarsening the model grid.
+\Pymolfit\ divides the spectrum into processing segments while preserving spectral-order and detector-group boundaries, identified from metadata or inferred from large wavelength gaps. The default target width is 50\,\AA, with further subdivision if the atmospheric grid exceeds two million points per segment. These configurable limits control memory use without coarsening the model grid.
 
 Fitting regions focus parameter estimation on telluric absorption, while exclusion regions remove stellar features or defective pixels that could bias the fit. Only valid pixels within fitting regions and outside exclusions contribute to the comparison between the observed spectrum and the model.
 
@@ -174,16 +185,16 @@ The function \texttt{select\_telluric\_regions()} automatically generates fittin
 \end{equation}
 where \(S_j(T_{\mathrm{ref}})\) is the reference strength of transition \(j\), and \(N_{s(j),\mathrm{rep}}\) is the column density of its species \(s(j)\) in a fixed reference atmosphere. The highest-scoring lines within the observed coverage are selected. Each window extends a configurable number of detector pixels on either side of its line centre; the defaults are 100 lines and a half-width of 12 pixels. Lines in wavelength gaps are skipped, and overlapping windows are merged.
 
-Enabling the interactive editor displays the generated intervals for inspection and manual adjustment (Fig.~\ref{fig:Interactive_selector}). Fitting and exclusion intervals can then be saved together in an ECSV file and supplied to the correction.
+Enabling the interactive editor displays the generated intervals for inspection and manual adjustment (Fig.~\ref{fig:Interactive_selector}). Fitting and exclusion intervals can then be saved together in an Character-Separated Values format (ECSV) file and supplied to the correction.
 
 When no fitting regions are supplied to \texttt{correct()}, it selects them automatically using the same ranking score, but distributes the selected lines across wavelength and molecular species and adapts window widths to the estimated instrumental broadening.
 
-Stellar exclusions can be generated from a theoretical stellar spectrum. PyMolFit continuum-normalises the template and broadens it for stellar rotation and, when a resolving power is supplied or available in the metadata, instrumental resolution. The template is converted to the observation's wavelength medium and reference frame using the stellar radial velocity and observation frame correction. Features exceeding a specified fractional deviation from the template continuum define exclusion intervals. These intervals are widened by a configurable velocity margin to include line wings and allow small alignment errors.
+Stellar exclusions can be generated from a theoretical stellar spectrum. \Pymolfit\ continuum-normalises the template, broadens it for stellar rotation and, when a resolving power is supplied or available in the metadata, instrumental resolution. The template is converted to the observation's wavelength medium and reference frame using the stellar radial velocity and observation frame correction. Features exceeding a specified fractional deviation from the template continuum define exclusion intervals. These intervals are widened by a configurable velocity margin to include line wings and allow small alignment errors.
 
 \subsection{Spectral modelling and parameter estimation}
-With the fitting and exclusion regions defined, PyMolFit performs preliminary fits to representative telluric-rich regions to select the wavelength-correction and instrumental-broadening models. It compares the original wavelength calibration with constant, linear, and, where supported, quadratic corrections for each spectral order or detector group. Instrumental broadening initially uses a Gaussian profile; additional Lorentzian wings or wavelength-dependent widths are retained when justified by the preliminary comparisons. The main fit then refines the selected models using all fitting regions.
+With the fitting and exclusion regions defined, \pymolfit\ performs preliminary fits to representative telluric-rich regions to select the wavelength-correction and instrumental-broadening models. It compares the original wavelength calibration with constant, linear, and, where supported, quadratic corrections for each spectral order or detector group. Instrumental broadening initially uses a Gaussian profile; additional Lorentzian wings or wavelength-dependent widths are retained when justified by the preliminary comparisons. The main fit then refines the selected models using all fitting regions.
 
-Both stages construct the predicted flux in the same way. At each trial, molecular scaling factors, initially unity, rescale the atmospheric-profile columns used to calculate \(T_{\mathrm{atm}}\). The trial wavelength correction is applied, and the transmission is averaged over each observed pixel's wavelength interval before convolution with the normalised instrumental line-spread function. This processed transmission is denoted by \(\widehat T_{kp}\) at pixel \(p\) in segment \(k\). Only the model is resampled; the observation remains unchanged.
+Both stages construct the predicted flux in the same way. Species optical-depth contributions are calculated in advance for the reference atmosphere. At each trial, molecular scaling factors, initially unity, multiply these contributions before they are summed to calculate \(T_{\mathrm{atm}}\). Composition-dependent line widths and nonlinear continuum contributions are not recalculated as these factors change. The trial wavelength correction is applied, and the transmission is averaged over each observed pixel's wavelength interval before convolution with the normalised instrumental line-spread function. This processed transmission is denoted by \(\widehat T_{kp}\) at pixel \(p\) in segment \(k\). Only the model is resampled; the observation remains unchanged.
 
 A local polynomial continuum scales the transmission to the observed flux level:
 \begin{equation}
@@ -210,7 +221,7 @@ A bounded trust-region reflective optimiser iteratively updates the molecular sc
 
 After a successful initial main fit, alternative continuum orders are tested on temporarily withheld wavelength blocks with the fitted transmission held fixed. The quadratic is retained unless validation favours an alternative. The residual scatter may also update the robust-loss scale \(a\). When required, the main fit is repeated with these updated settings.
 
-With the final parameters fixed, PyMolFit evaluates the transmission over the full input wavelength coverage, including transitions outside fitting regions and within excluded intervals. The corrected observed flux is
+With the final parameters fixed, \pymolfit\ evaluates the transmission over the full input wavelength coverage, including transitions outside fitting regions and within excluded intervals. The corrected observed flux is
 \begin{equation}
     F^{\mathrm{corr}}_{kp}
     = \frac{F^{\mathrm{obs}}_{kp}}{\widehat T_{kp}},
@@ -223,58 +234,69 @@ where \(\widehat T_{kp}\) now denotes the final fitted transmission. This step a
 
 \section{Validation}\label{sec:validation}
 
-We assess PyMolFit against \Molecfit, an established telluric-correction package with published performance evaluations \citep{MOLECFIT1,MOLECFIT2}. Both programs independently correct the same HARPS observation of $\beta$~Pictoris, obtained on 6 April 2017 and covering approximately 378--691\,nm. They use the same input spectrum, uncertainties, GDAS profile, AER catalogue, and fitting and exclusion regions. Both fit H$_2$O and O$_2$ columns, with weak CO absorption included at its reference abundance.
+We assess \pymolfit\ against \molecfit, an established telluric-correction package with published performance evaluations \citep{MOLECFIT1,MOLECFIT2}. The comparisons use HARPS and ESPRESSO spectra and a CRIRES+ extraction. For each observation, both programs independently fit the same spectrum and uncertainties, using matched atmospheric inputs, spectroscopic data, and fitting and exclusion regions.
 
-\subsection{Selected stellar absorption regions}
+\subsection{Na\,I D comparisons}
 
-Figure~\ref{fig:validation_regions} shows six regions extracted from the full-spectrum corrections without additional fitting or rescaling. Both methods substantially reduce telluric absorption around Na\,I, Fe\,II, and H$\alpha$, producing closely overlapping corrected spectra. The comparatively telluric-free Ca\,II and Mg\,II regions show that the stellar profiles remain essentially unchanged.
+Figure~\ref{fig:validation_comparisons} (top) shows the Na\,I D region in $\beta$~Pictoris observed with HARPS on 6 April 2017 and AU Mic observed with ESPRESSO on 8 July 2023. The HARPS panel is extracted from the full-spectrum correction, which fits H$_2$O and O$_2$ columns and includes weak CO absorption at its reference abundance.
 
-\begin{figure*}[t]
+For AU Mic, both programs fit the telluric interval at 592.05--592.22\,nm, outside the broad stellar Na\,I absorption, using a quadratic continuum, a constant wavelength shift, and a fitted Gaussian instrumental width. The fitted transmission is then evaluated across the doublet. Within each panel, the original and corrected spectra share one constant flux scale. The corrected spectra closely overlap, although the telluric features in this ESPRESSO observation are comparatively weak.
+
+\subsection{Atmospheric transmission comparisons}
+
+We compare the fitted transmissions on the observed detector grid, including wavelength correction and instrumental broadening. Their relative difference at pixel $p$ in segment $k$ is
+\begin{equation}
+    \Delta_{kp}
+    = \frac{\widehat T^{\mathrm{Py}}_{kp}}
+           {\widehat T^{\mathrm{MF}}_{kp}} - 1.
+\end{equation}
+Positive values indicate higher transmission predicted by \pymolfit; negative values indicate lower transmission. Ratios use valid pixels where both transmissions are at least 0.1, without wavelength binning, a stellar reference, or additional normalisation.
+
+The middle figure in Fig.~\ref{fig:validation_comparisons} shows the HARPS comparison over 560--610\,nm. Across the full available coverage, approximately 378--691\,nm, the mean absolute relative difference is $\langle|\Delta|\rangle=9.44\times10^{-5}$ over 309\,719 usable pixels. This average includes many pixels with little telluric absorption.
+
+The CRIRES+ observation, obtained on 5 April 2022, contains 15 detector-order segments between 3512.8 and 5210.7\,nm. Each segment is fitted independently using quadratic continuum and wavelength-correction models and a Gaussian instrumental profile whose width scales with wavelength. Both programs use uncertainty-weighted least squares and matched molecular inclusion and fitted-species choices. Fitting excludes 30 pixels at each segment edge, the broad source feature at 4050--4056\,nm, and three withheld wavelength blocks per segment. Each program is fitted from three initial Gaussian widths, retaining its lowest fitting-region chi-square.
+
+The bottom figure shows the CRIRES+ windows at 3740--3830 and 4007.7--4103\,nm. The transmissions largely overlap, with small systematic offsets and localised differences. Across the full coverage, including fitted and withheld pixels, $\langle|\Delta|\rangle=0.01060$ over 29\,019 usable pixels. A larger disagreement remains near 5150--5175\,nm, outside the displayed windows. These comparisons measure consistency between the programs, not absolute correction accuracy.
+
+\begin{figure*}[h]
     \centering
-    \includegraphics[width=\textwidth]{Images/regions_mosaic.png}
-    \caption{Selected regions of the $\beta$~Pictoris spectrum before correction (green) and after correction with PyMolFit (blue) and Molecfit (dashed orange). All curves share the same flux scaling. Wavelengths are observatory-frame vacuum values; the Fe\,II panel titles use conventional rest-frame air wavelengths.}
+    \includegraphics[width=\textwidth,height=0.23\textheight,keepaspectratio]{Images/regions_mosaic.png}
+    \par\smallskip
+    \includegraphics[width=\textwidth,height=0.23\textheight,keepaspectratio]{Images/mean_absolute_deviation.png}
+    \par\smallskip
+    \includegraphics[width=\textwidth,height=0.23\textheight,keepaspectratio]{Images/crires_comparison.png}
+    \caption{Comparison of \pymolfit\ and \molecfit.
+    Top: Na\,I D spectra of $\beta$~Pictoris from HARPS (left) and AU Mic from ESPRESSO (right), before correction (green) and after correction with \pymolfit\ (blue) and \molecfit\ (dashed orange). Each observation has its own constant flux scaling, shared by all curves.
+    Middle: HARPS atmospheric transmissions over 560--610\,nm and their relative difference $\Delta$.
+    Bottom: the same transmission diagnostic for two CRIRES+ wavelength windows. The dashed divider and axis-break marks indicate the compressed wavelength gap; curves do not connect separate detector segments. The CRIRES+ difference panel is limited to $\Delta=0.005$ at its upper edge, clipping larger positive spikes for visibility without excluding them from the statistics.
+    All wavelengths are observatory-frame vacuum values in nm, and all curves retain native sampling. Quoted full-coverage statistics include wavelengths outside the displayed windows.}
+    \label{fig:validation_comparisons}
     \label{fig:validation_regions}
-\end{figure*}
-
-\subsection{Full-spectrum comparison}
-
-We compare both corrected spectra with one shared theoretical stellar reference, $F^{\mathrm{ref}}$. The BT-NextGen template ($T_{\mathrm{eff}}=8000$\,K, $\log g=4$, solar metallicity) is adjusted for velocity, rotational and instrumental broadening, and a smooth flux calibration using weakly telluric-affected pixels. It is not fitted separately to each correction.
-
-Figure~\ref{fig:validation_deviation} compares the absolute deviations from this reference in 1\,nm bins. Both methods use identical comparison pixels, excluding invalid samples, transmission values at or below 0.01, and predefined narrow Na and Ca cores not represented by the photospheric template.
-
-The pixel-averaged relative absolute deviations are 1.277\% for PyMolFit and 1.278\% for Molecfit. Restricting the comparison to telluric-affected pixels, where either fitted transmission is below 0.995, gives 0.628\% and 0.639\%, respectively. The methods therefore give similar reference agreement for this observation. These deviations also contain stellar-template mismatch and observational noise; they do not establish absolute correction accuracy or general superiority of either method.
-
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=\textwidth]{Images/mean_absolute_deviation.png}
-    \caption{Full-spectrum comparison with the shared stellar reference. Upper panel: mean relative absolute deviation, $\langle 100|F^{\mathrm{corr}}-F^{\mathrm{ref}}|/F^{\mathrm{ref}}\rangle$, for each correction. Lower panel: $\langle |F^{\mathrm{corr}}_{\mathrm{Py}}-F^{\mathrm{ref}}|-|F^{\mathrm{corr}}_{\mathrm{MF}}-F^{\mathrm{ref}}|\rangle$, in common scaled flux units. Negative values indicate closer agreement for PyMolFit; positive values indicate closer agreement for Molecfit. Brackets denote averages over the same usable pixels in each 1\,nm bin. The gap near 531--534\,nm reflects missing input data.}
+    \label{fig:validation_full}
+    \label{fig:validation_transmissions}
     \label{fig:validation_deviation}
+    \label{fig:validation_crires}
 \end{figure*}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 6 Discussion
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Discussion}
-% Planned future developments:
-% stronger Molecfit/LBLRTM parity,
-% broader continuum support,
-% and further validation of the joint stellar model.
 
+The HARPS comparison demonstrates closely comparable corrections for the tested observation, both around selected stellar features and across the full spectrum. The CRIRES+ comparison extends the assessment to infrared wavelengths and reveals more variable agreement. \Pymolfit\ has a lower average deviation from the shared continuum, although either method is closer in individual wavelength intervals.
+
+\Pymolfit's main contribution concerns implementation and workflow rather than a new physical description of atmospheric absorption. Its Python interface combines atmospheric modelling, parameter estimation, and correction. Automatic fitting-region selection and optional stellar exclusions reduce manual preparation, while the interactive editor allows these choices to be inspected and adjusted. These capabilities facilitate integration into existing Python analysis pipelines.
+
+The quantitative assessment remains limited to one HARPS observation and one CRIRES+ extraction. Other applications have produced qualitatively satisfactory corrections but are not quantitatively assessed here. Broader performance across spectral types, instrumental configurations, and atmospheric conditions therefore remains to be established.
+
+Neither comparison provides independent ground truth. Shared atmospheric inputs and spectroscopic data can produce common errors, while noise, source-spectrum mismatch, and extraction artifacts contribute to the deviations. The CRIRES+ reference additionally depends on both fitted transmissions and represents a smooth continuum rather than a stellar spectrum. Its deviations therefore measure consistency with that reference and are not directly equivalent to the HARPS stellar-template deviations. These comparisons assess agreement with \molecfit\ under the tested conditions, rather than establishing absolute correction accuracy or general superiority.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 7 Availability
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Software and data availability}
+\section{Software and availability}
 
-% Repository.
-%
-% License.
-%
-% Installation.
-%
-% Documentation.
+\Pymolfit's original Python code is released under the BSD 3-Clause licence. The source code, documentation, tutorial notebooks, and issue tracker are available on GitHub\footnote{\url{https://github.com/nikolasvalsamidis97/PyMolFit}}. The package supports Python 3.10 and later and can be installed from PyPI\footnote{\url{https://pypi.org/project/pymolfit/}} using \texttt{pip install pymolfit}. Installation and usage instructions, including optional interactive dependencies, are provided in the documentation.
 
+Scientific datasets and derived coefficient tables retain their upstream licensing and attribution requirements, documented in the repository. The default AER line catalogue is downloaded automatically, verified by checksum, and cached locally rather than bundled with the package.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 8 Conclusions
@@ -282,23 +304,15 @@ The pixel-averaged relative absolute deviations are 1.277\% for PyMolFit and 1.2
 
 \section{Conclusions}
 
-% Summarize:
-%
-% Motivation
-% Main capabilities
-% Validation
-% Availability
-%
-% End with the future outlook.
+We have presented \pymolfit, an independent Python implementation of established model-based telluric correction. The package combines atmospheric modelling, parameter estimation, and correction within a unified interface, supported by automatic fitting-region selection, optional stellar-feature exclusions, and interactive editing.
 
+Comparisons with \molecfit\ using matched inputs show closely comparable corrections for the tested HARPS observation, both around selected stellar features and across the full spectrum. The full CRIRES+ comparison reveals wavelength-dependent differences, with a lower average deviation for \pymolfit\ from the shared smooth continuum reference.
+
+These comparisons assess consistency under the tested conditions rather than absolute correction accuracy. In particular, the CRIRES+ reference depends on both fitted transmissions, while noise and reference mismatch contribute to the deviations in both datasets. Further validation across observations, instrumental configurations, and atmospheric conditions is needed to establish broader performance. \Pymolfit\ provides an open-source Python framework for this continued assessment and for integration into spectroscopic analysis workflows.
 
 \begin{acknowledgements}
-
+Special thanks to Alexandra Stockwell Murphy who dedicated precious time to test \pymolfit\ during development. 
 \end{acknowledgements}
-
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % WARNING
 % Please note that we have included the references below in
@@ -312,5 +326,51 @@ The pixel-averaged relative absolute deviations are 1.277\% for PyMolFit and 1.2
 
 \bibliographystyle{aa}
 \bibliography{bibliography}
+
+\appendix
+\onecolumn
+\section{Comparison with Molecfit}
+
+\begin{table}[h]
+\centering
+\caption{Atmospheric and spectroscopic calculations in \molecfit\ and \pymolfit. Shared physical methods are distinguished from differences in numerical implementation and model coverage.}
+\label{tab:physical_implementation}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{@{}p{0.18\textwidth}XX@{}}
+\toprule
+Stage & \molecfit\ & \pymolfit\ \\
+\midrule
+Atmospheric preparation & Combines MIPAS and GDAS profiles with available surface measurements. & Follows the same profile-construction approach using MIPAS, GDAS and available surface measurements, implemented directly in Python. \\
+Line preparation & LNFL preprocesses the molecular catalogue for LBLRTM. & Can use the same AER catalogue, but parses its records directly, including supported auxiliary broadening and line-coupling data. \\
+Physical constants & Uses numerical values embedded in the bundled LBLRTM implementation. & Uses modern Astropy values for basic calculations and selected LBLRTM legacy values for compatible components. The numerical values are therefore not identical throughout. \\
+Voigt evaluation & Evaluates Voigt-based profiles using LBLRTM's approximation and tabulation procedures. & Uses the same underlying Voigt function, evaluated through SciPy's Faddeeva function. The numerical evaluation differs. \\
+Line wings and spectral grids & Uses nested grids, line-dependent profile domains and separate far-wing accumulation. & The default \texttt{lblrtm\_panel} treatment follows the same accumulation strategy through an independent numerical implementation. \\
+Atmospheric continuum & Uses continuum and broad-band absorption models and coefficients implemented in LBLRTM. & Implements LBLRTM-derived models for H$_2$O, CO$_2$, O$_2$, O$_3$ and N$_2$, including ultraviolet absorption bands. These share the underlying physical treatment and reference coefficients but use an independent numerical implementation. Optional external tables are also supported. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Fitting and workflow comparison between \molecfit\ and \pymolfit. The frameworks share the model-based correction principle but differ in parameter updates, optimisation and automation. The \pymolfit\  column describes the default high-level workflow; several choices can be overridden.}
+\label{tab:fitting_implementation}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{@{}p{0.18\textwidth}XX@{}}
+\toprule
+Stage & \molecfit\ & \pymolfit\ \\
+\midrule
+Processing intervals & Uses configured fitting ranges and detector associations. & Preserves physical order and detector-group boundaries, with automatic subdivision into smaller processing segments. \\
+Fitting and exclusion regions & Uses inclusion and exclusion intervals configurable through input files or the graphical interface. & Uses the same inclusion and exclusion principle, with automatic telluric-window selection and optional stellar-template exclusions. Interactive editing is also available. \\
+Molecular abundance updates & Fits molecular scaling factors by updating atmospheric profiles and recalculating the LBLRTM transmission when required. & Also fits molecular scaling factors, but applies them to precomputed species optical-depth contributions at the reference atmospheric conditions. \\
+Wavelength and instrumental models & Fits configured wavelength corrections and instrumental kernel components. & Supports the same general model families, but automatically compares candidate forms before refinement. Kernel discretisation also differs. \\
+Flux continuum & Fits multiplicative polynomial continua within its staged and joint optimisation procedure. & Uses the same multiplicative polynomial model, but normally solves its coefficients at each nonlinear trial using weighted or iteratively reweighted linear least squares. Polynomial order can be selected automatically. \\
+Fit objective & Minimises uncertainty-weighted squared residuals. & Uses the same uncertainty-normalised residuals, but applies a soft-$L_1$ loss by default. Ordinary weighted least squares is optional. \\
+Optimisation algorithm & Uses MPFIT's Levenberg--Marquardt algorithm. & Also performs nonlinear least-squares optimisation, but uses SciPy's bounded trust-region reflective algorithm. \\
+Correction workflow & Separates parameter fitting, full-coverage transmission calculation and division of the observed flux by the fitted transmission into pipeline recipes. & Performs the same overall stages through the single function \texttt{correct()}. The final correction likewise divides the observed flux by the fitted transmission. \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \end{document}
