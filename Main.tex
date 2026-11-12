@@ -139,7 +139,7 @@ The resulting framework provides its own interface and automated processing feat
 
 \Pymolfit\ automatically divides the spectrum into processing segments while preserving spectral-order and detector-group boundaries. Fitting regions can be selected automatically or inspected and edited interactively. When a theoretical stellar spectrum is supplied, it can be used to identify stellar features and exclude them from telluric parameter estimation. These exclusions affect only the fit; atmospheric transmission is still calculated in the excluded regions when applying the correction.
 
-The core approach remains that of \molecfit: constructing an atmospheric model, fitting its predicted transmission to the observation, and using the fitted transmission to remove telluric absorption \citep{MOLECFIT1,MOLECFIT2}. The physical methods are established, but \pymolfit\ performs its own numerical calculations without executing \Molecfit\ or \LBLRTM. Differences in data handling, numerical implementation, and optimisation can therefore produce different transmission spectra and fitted parameters. These implementation differences are summarised in Tables~\ref{tab:physical_implementation} and~\ref{tab:fitting_implementation}, and the resulting corrections are compared in Sect.~\ref{sec:validation}.
+The core approach remains that of \molecfit: constructing an atmospheric model, fitting its predicted transmission to the observation, and using the fitted transmission to remove telluric absorption \citep{MOLECFIT1,MOLECFIT2}. \molecfit\ calculates atmospheric transmission using the Line-By-Line Radiative Transfer Model (\LBLRTM), which models absorption by individual molecular transitions and atmospheric continua. \pymolfit\ follows established physical methods but performs its own numerical calculations without executing either program. Differences in data handling, numerical implementation, and optimisation can therefore produce different transmission spectra and fitted parameters. These implementation differences are summarised in Tables~\ref{tab:physical_implementation} and~\ref{tab:fitting_implementation}, and the resulting corrections are compared in Sect.~\ref{sec:validation}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3 Methodology
@@ -156,7 +156,7 @@ where \(\mathcal{L}_i\) is the light path within the layer and \(\ell\) measures
 
 Absorption is evaluated on a grid finer than the detector sampling. The AER catalogue \citep{AER} supplies line positions, integrated strengths \(S_j(T_{\mathrm{ref}})\), and broadening parameters at \(T_{\mathrm{ref}}=296\,\mathrm{K}\) \citep{HITRAN}. Defining the wavenumber \(\tilde{\nu}=1/\lambda\), where \(\lambda\) is wavelength, the cross section for transition \(j\) in layer \(i\) is
 \begin{equation} \sigma_{j,i}(\tilde{\nu}) = S_j(T_i)\,\phi_{j,i}(\tilde{\nu}). \end{equation}
-Here, \(S_j(T_i)\) is the strength adjusted to the layer temperature \(T_i\), and \(\phi_{j,i}\) is the effective Voigt-based profile. Local pressure, temperature, and composition determine the line position and Doppler and collisional broadening. The discrete-line optical depth is
+Here, \(S_j(T_i)\) is the line strength adjusted to the layer temperature \(T_i\), and \(\phi_{j,i}\) is the absorption profile, based on a Voigt function combining thermal and collisional broadening. Local pressure, temperature, and composition determine the line position and Doppler and collisional broadening. The discrete-line optical depth is
 \begin{equation} \tau_{\mathrm{lines}}(\tilde{\nu}) = \sum_i\sum_s N_{s,i}\sum_{j\in s}\sigma_{j,i}(\tilde{\nu}), \end{equation}
 where \(j\in s\) denotes transitions of species \(s\). Enabled atmospheric continuum contributions, including water-vapour and carbon-dioxide absorption, give an additional optical depth \(\tau_{\mathrm{cont}}\) \citep{MTCKD,LBLRTM}. The total optical depth and Beer--Lambert transmission are \citep{RYBICKI1979}
 \begin{equation}
@@ -234,7 +234,7 @@ where \(\widehat T_{kp}\) now denotes the final fitted transmission. This step a
 
 \section{Validation}\label{sec:validation}
 
-We assess \pymolfit\ against \molecfit, an established telluric-correction package with published performance evaluations \citep{MOLECFIT1,MOLECFIT2}. The comparisons use HARPS and ESPRESSO spectra and a CRIRES+ extraction. For each observation, both programs independently fit the same spectrum and uncertainties, using matched atmospheric inputs, spectroscopic data, and fitting and exclusion regions.
+We assess \pymolfit\ version 0.8.3 against \molecfit\ version 4.4.4, an established telluric-correction package with published performance evaluations \citep{MOLECFIT1,MOLECFIT2}. The comparisons use HARPS and ESPRESSO spectra and a CRIRES+ extraction. For each observation, both programs independently fit the same spectrum and uncertainties, using matched atmospheric inputs, spectroscopic data, and fitting and exclusion regions.
 
 \subsection{Na\,I D comparisons}
 
